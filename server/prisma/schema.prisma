@@ -10,13 +10,14 @@ datasource db {
 // ============ 用户与家庭 ============
 
 model Family {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  members   User[]
-  tasks     Task[]
-  world     World?
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  members    User[]
+  tasks      Task[]
+  world      World?
 }
 
 model User {
