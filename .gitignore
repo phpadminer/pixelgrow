@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+.output/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# WeChat Mini Program
+client/miniprogram/miniprogram_npm/
+client/miniprogram/node_modules/
+
+# PlatformIO
+hardware/**/.pio/
+hardware/**/lib/README
+
+# 3D Printing temp files
+*.gcode
+*.3mf.bak
+
+# OS
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Secrets
+*.pem
+*.key
+credentials.json

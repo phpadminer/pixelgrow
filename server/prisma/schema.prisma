@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ 用户与家庭 ============
+
+model Family {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  members   User[]
+  tasks     Task[]
+  world     World?
+}
+
+model User {
+  id       String   @id @default(cuid())
+  familyId String
+  family   Family   @relation(fields: [familyId], references: [id])
+  role     UserRole
+  name     String
+  openId   String?  @unique
+  avatar   String?
+
+  character    Character?
+  pets         Pet[]
+  tasks        Task[]       @relation("TaskAssignee")
+  createdTasks Task[]       @relation("TaskCreator")
+  achievements Achievement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  CHILD
+  PARENT
+}
+
+// ============ 角色系统 ============
+
+model Character {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  name       String
+  level      Int    @default(1)
+  exp        Int    @default(0)
+  profession String @default("adventurer")
+
+  // 六维属性
+  wisdom     Int @default(0)
+  lifeSkill  Int @default(0)
+  social     Int @default(0)
+  creativity Int @default(0)
+  art        Int @default(0)
+  luck       Int @default(0)
+
+  // 外观（JSON）
+  appearance Json @default("{}")
+  // 装备（JSON）
+  equipment  Json @default("{}")
+
+  snapshots CharacterSnapshot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CharacterSnapshot {
+  id          String    @id @default(cuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  level       Int
+  modelData   Json
+  note        String?
+  createdAt   DateTime  @default(now())
+}
+
+// ============ 宠物系统 ============
+
+model Pet {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  name      String
+  species   String
+  level     Int    @default(1)
+  exp       Int    @default(0)
+  rarity    PetRarity @default(COMMON)
+  mood      Int    @default(100)
+  hunger    Int    @default(100)
+  appearance Json  @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PetRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+// ============ 任务系统 ============
+
+model Task {
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id])
+
+  creatorId  String
+  creator    User   @relation("TaskCreator", fields: [creatorId], references: [id])
+  assigneeId String
+  assignee   User   @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  type             TaskType
+  title            String
+  description      String   @db.Text
+  verificationType VerificationType
+  status           TaskStatus @default(PENDING)
+
+  // GPS任务数据
+  gpsData  Json?
+  // 奖励
+  rewards  Json @default("{}")
+
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum TaskType {
+  STUDY
+  LIFE
+  SOCIAL
+  SURPRISE
+  GPS_QUEST
+}
+
+enum VerificationType {
+  PHOTO
+  NFC
+  GPS
+  TIMER
+  CONFIRM
+  VOICE
+  AUDIO
+  AUTO
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFYING
+  COMPLETED
+  EXPIRED
+}
+
+// ============ 知识系统 ============
+
+model KnowledgeTree {
+  id     String @id @default(cuid())
+  userId String
+  // 各学科各知识点等级（JSON）
+  tree   Json   @default("{}")
+
+  updatedAt DateTime @updatedAt
+}
+
+model KnowledgeScene {
+  id     String @id @default(cuid())
+  userId String
+  date   DateTime @default(now())
+  theme  String
+  scenes Json   // 场景数组
+  boss   Json?  // Boss数据
+
+  createdAt DateTime @default(now())
+}
+
+// ============ 虚拟世界 ============
+
+model World {
+  id       String @id @default(cuid())
+  familyId String @unique
+  family   Family @relation(fields: [familyId], references: [id])
+
+  regions        WorldRegion[]
+  explorationRate Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorldRegion {
+  id      String @id @default(cuid())
+  worldId String
+  world   World  @relation(fields: [worldId], references: [id])
+
+  name        String
+  fantasyName String
+  type        String
+  unlocked    Boolean @default(false)
+  realLocation Json?  // 真实GPS坐标（加密存储）
+  buildings    Json   @default("[]")
+  npcs         Json   @default("[]")
+
+  createdAt DateTime @default(now())
+}
+
+// ============ 成就系统 ============
+
+model Achievement {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  type        String
+  title       String
+  description String
+  icon        String?
+  unlockedAt  DateTime @default(now())
+}
+
+// ============ 创作系统 ============
+
+model Creation {
+  id     String @id @default(cuid())
+  userId String
+  type   CreationType
+  title  String
+
+  // 原始内容（作文文本/画作URL）
+  content    String? @db.Text
+  contentUrl String?
+
+  // AI生成结果
+  resultUrl  String?
+  resultData Json?
+
+  createdAt DateTime @default(now())
+}
+
+enum CreationType {
+  ESSAY_ANIME   // 作文→动漫
+  DRAWING       // 画作→像素化
+  MUSIC         // 音乐录制
+  COLLAB        // 兄妹协作
+}
+
+// ============ GPS轨迹 ============
+
+model GpsTrack {
+  id     String @id @default(cuid())
+  taskId String
+  userId String
+  points Json   // [{lat, lng, timestamp}]
+  events Json   // 路上触发的事件记录
+
+  createdAt DateTime @default(now())
+}

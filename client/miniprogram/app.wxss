@@ -1,0 +1,68 @@
+/* PixelGrow Global Styles */
+
+page {
+  background-color: #16213e;
+  color: #e8e8e8;
+  font-family: 'Courier New', monospace;
+  font-size: 28rpx;
+}
+
+/* Pixel-style containers */
+.pixel-card {
+  background-color: #1a1a2e;
+  border: 4rpx solid #FFD700;
+  border-radius: 8rpx;
+  padding: 24rpx;
+  margin: 16rpx;
+  image-rendering: pixelated;
+}
+
+.pixel-button {
+  background-color: #FFD700;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 4rpx;
+  padding: 16rpx 32rpx;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  font-size: 28rpx;
+}
+
+.pixel-button:active {
+  background-color: #e6c200;
+  transform: scale(0.95);
+}
+
+/* Typography */
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #FFD700;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #a0a0a0;
+}
+
+/* Attribute colors */
+.attr-wisdom { color: #4FC3F7; }
+.attr-life { color: #81C784; }
+.attr-social { color: #FFB74D; }
+.attr-creativity { color: #E991E5; }
+.attr-art { color: #FF8A65; }
+.attr-luck { color: #FFD700; }
+
+/* Status bar */
+.progress-bar {
+  height: 16rpx;
+  background-color: #2a2a4e;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 8rpx;
+  transition: width 0.3s ease;
+}

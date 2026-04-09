@@ -1,0 +1,61 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/world/index",
+    "pages/tasks/index",
+    "pages/character/index",
+    "pages/map/index",
+    "pages/creative/index",
+    "pages/social/index",
+    "pages/parent/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "PixelGrow",
+    "navigationBarBackgroundColor": "#1a1a2e",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#16213e",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#8a8a8a",
+    "selectedColor": "#FFD700",
+    "backgroundColor": "#1a1a2e",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "assets/images/tab-home.png",
+        "selectedIconPath": "assets/images/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/world/index",
+        "text": "世界",
+        "iconPath": "assets/images/tab-world.png",
+        "selectedIconPath": "assets/images/tab-world-active.png"
+      },
+      {
+        "pagePath": "pages/tasks/index",
+        "text": "任务",
+        "iconPath": "assets/images/tab-tasks.png",
+        "selectedIconPath": "assets/images/tab-tasks-active.png"
+      },
+      {
+        "pagePath": "pages/character/index",
+        "text": "角色",
+        "iconPath": "assets/images/tab-character.png",
+        "selectedIconPath": "assets/images/tab-character-active.png"
+      }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于GPS冒险任务的实时定位"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation",
+    "startLocationUpdate",
+    "onLocationChange"
+  ]
+}

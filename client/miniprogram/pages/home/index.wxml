@@ -1,0 +1,55 @@
+<view class="container">
+  <!-- Pet Display Area -->
+  <view class="pixel-card pet-area">
+    <view class="pet-sprite">
+      <!-- TODO: PixiJS canvas for pet animation -->
+      <text class="pet-placeholder">🐾</text>
+    </view>
+    <view class="pet-info">
+      <text class="title">{{pet.name}}</text>
+      <text class="subtitle">Lv.{{pet.level}} · {{pet.mood}}</text>
+    </view>
+  </view>
+
+  <!-- Character Summary -->
+  <view class="pixel-card character-summary">
+    <view class="char-header">
+      <text class="title">{{character.name}}</text>
+      <text class="subtitle">{{character.profession}} · Lv.{{character.level}}</text>
+    </view>
+    <view class="exp-bar">
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{expPercent}}%; background-color: #FFD700;"></view>
+      </view>
+      <text class="subtitle">{{character.exp}} / {{nextLevelExp}} EXP</text>
+    </view>
+  </view>
+
+  <!-- Today's Tasks -->
+  <view class="pixel-card tasks-today">
+    <text class="title">Today's Quests</text>
+    <view wx:for="{{todayTasks}}" wx:key="id" class="task-item">
+      <view class="task-icon">{{item.icon}}</view>
+      <view class="task-info">
+        <text class="task-title">{{item.title}}</text>
+        <text class="task-reward">+{{item.rewards.exp}} EXP · +{{item.rewards.coins}} Coins</text>
+      </view>
+      <view class="task-status {{item.status === 'COMPLETED' ? 'completed' : ''}}">
+        {{item.status === 'COMPLETED' ? '✅' : '⬜'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- Quick Actions -->
+  <view class="quick-actions">
+    <view class="action-btn" bindtap="onNfcCheckin">
+      <text>📱 NFC Check-in</text>
+    </view>
+    <view class="action-btn" bindtap="onStartAdventure">
+      <text>⚔️ Adventure</text>
+    </view>
+    <view class="action-btn" bindtap="onCreateWork">
+      <text>✏️ Create</text>
+    </view>
+  </view>
+</view>
