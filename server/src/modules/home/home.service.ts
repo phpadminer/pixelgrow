@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { PrismaService } from '../../prisma/prisma.service'
 
 type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED'
 type PetMood = 'happy' | 'curious' | 'sleepy'
@@ -34,23 +35,66 @@ export interface HomeSummaryResponse {
 
 @Injectable()
 export class HomeService {
-  getSummary(_userId?: string): HomeSummaryResponse {
-    // Temporary seed data until Character/Task modules are connected.
-    const character = {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getSummary(characterId?: string): Promise<HomeSummaryResponse> {
+    const character = characterId
+      ? await this.loadCharacter(characterId)
+      : this.defaultCharacter()
+
+    const pet = this.defaultPet()
+    const todayTasks = this.defaultTasks()
+
+    const nextLevelExp = character.level * 100
+    const expPercent = Math.min(
+      100,
+      Math.round((character.exp / nextLevelExp) * 100),
+    )
+
+    return {
+      character,
+      pet,
+      todayTasks,
+      expPercent,
+      nextLevelExp,
+    }
+  }
+
+  private async loadCharacter(characterId: string) {
+    const row = await this.prisma.character.findUnique({
+      where: { id: characterId },
+    })
+    if (!row) {
+      throw new NotFoundException('Character not found')
+    }
+    return {
+      name: row.name,
+      level: row.level,
+      exp: row.exp,
+      profession: row.profession,
+    }
+  }
+
+  private defaultCharacter() {
+    return {
       name: '小明',
       level: 5,
       exp: 340,
       profession: '音乐骑士',
     }
+  }
 
-    const pet = {
+  private defaultPet() {
+    return {
       name: '火小狐',
       level: 3,
       mood: 'happy' as const,
       species: 'foxling',
     }
+  }
 
-    const todayTasks: HomeTask[] = [
+  private defaultTasks(): HomeTask[] {
+    return [
       {
         id: 'task-1',
         icon: '📚',
@@ -73,19 +117,5 @@ export class HomeService {
         status: 'COMPLETED',
       },
     ]
-
-    const nextLevelExp = character.level * 100
-    const expPercent = Math.min(
-      100,
-      Math.round((character.exp / nextLevelExp) * 100),
-    )
-
-    return {
-      character,
-      pet,
-      todayTasks,
-      expPercent,
-      nextLevelExp,
-    }
   }
 }

@@ -12,20 +12,49 @@ export class CharacterService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateCharacterDto) {
-    const existing = await this.prisma.character.findUnique({
-      where: { userId: dto.userId },
-    })
-    if (existing) {
-      throw new ConflictException('User already has a character')
-    }
+    return this.prisma.$transaction(async (tx) => {
+      let userId = dto.userId
+      let familyId: string
 
-    return this.prisma.character.create({
-      data: {
-        userId: dto.userId,
-        name: dto.name,
-        profession: dto.profession ?? 'adventurer',
-        appearance: dto.appearance ?? {},
-      },
+      if (userId) {
+        const user = await tx.user.findUnique({ where: { id: userId } })
+        if (!user) {
+          throw new NotFoundException('User not found')
+        }
+        familyId = user.familyId
+
+        const existing = await tx.character.findUnique({ where: { userId } })
+        if (existing) {
+          throw new ConflictException('User already has a character')
+        }
+      } else {
+        // Guest flow: create a family and user on the fly so local-only
+        // clients (no WeChat login) can still own a character.
+        const family = await tx.family.create({
+          data: { name: `${dto.name}的家庭` },
+        })
+        familyId = family.id
+
+        const guestUser = await tx.user.create({
+          data: {
+            familyId,
+            name: dto.name,
+            role: 'CHILD',
+          },
+        })
+        userId = guestUser.id
+      }
+
+      const character = await tx.character.create({
+        data: {
+          userId,
+          name: dto.name,
+          profession: dto.profession ?? 'adventurer',
+          appearance: dto.appearance ?? {},
+        },
+      })
+
+      return { character, userId, familyId }
     })
   }
 

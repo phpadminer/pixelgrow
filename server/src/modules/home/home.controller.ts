@@ -6,7 +6,7 @@ export class HomeController {
   constructor(private readonly homeService: HomeService) {}
 
   @Get('summary')
-  getSummary(@Query('userId') userId?: string) {
-    return this.homeService.getSummary(userId)
+  getSummary(@Query('characterId') characterId?: string) {
+    return this.homeService.getSummary(characterId)
   }
 }
