@@ -12,6 +12,7 @@ App({
   onLaunch() {
     const cachedState = store.hydrateFromStorage()
     this.syncGlobalData(cachedState)
+    this.handleInitialRoute()
     store.subscribe((nextState) => {
       this.syncGlobalData(nextState)
     })
@@ -22,6 +23,19 @@ App({
     this.globalData.userInfo = state.user
     this.globalData.familyId = state.family && state.family.id ? state.family.id : null
     this.globalData.character = state.character
+  },
+
+  handleInitialRoute() {
+    const hasCharacter = !!wx.getStorageSync('characterId')
+    const targetPath = hasCharacter ? '/pages/home/index' : '/pages/welcome/index'
+
+    setTimeout(() => {
+      const pages = getCurrentPages()
+      const currentRoute = pages && pages.length ? `/${pages[pages.length - 1].route}` : ''
+      if (currentRoute !== targetPath) {
+        wx.reLaunch({ url: targetPath })
+      }
+    }, 0)
   },
 
   async checkLogin() {
@@ -53,6 +67,11 @@ App({
       })
 
       this.syncGlobalData(nextState)
+      const nextCharacter = nextState.character || {}
+      const nextCharacterId = nextCharacter.id || nextCharacter.characterId || ''
+      if (nextCharacterId) {
+        wx.setStorageSync('characterId', nextCharacterId)
+      }
       console.log('[PixelGrow] Login success')
     } catch (err) {
       console.error('[PixelGrow] Login failed:', err)

@@ -1,0 +1,29 @@
+<view class="container">
+  <view class="hero-card">
+    <text class="title">欢迎来到 PixelGrow</text>
+    <text class="subtitle">为孩子打造专属的成长型现实 RPG 冒险</text>
+
+    <view class="pixel-illustration">
+      <view class="pixel-row">
+        <view class="pixel p1"></view>
+        <view class="pixel p2"></view>
+        <view class="pixel p3"></view>
+        <view class="pixel p4"></view>
+      </view>
+      <view class="pixel-row">
+        <view class="pixel p5"></view>
+        <view class="pixel p6"></view>
+        <view class="pixel p7"></view>
+        <view class="pixel p8"></view>
+      </view>
+      <view class="pixel-row">
+        <view class="pixel p9"></view>
+        <view class="pixel p10"></view>
+        <view class="pixel p11"></view>
+        <view class="pixel p12"></view>
+      </view>
+    </view>
+
+    <button class="start-btn" bindtap="onStartAdventure">开始冒险</button>
+  </view>
+</view>

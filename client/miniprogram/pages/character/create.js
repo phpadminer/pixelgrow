@@ -503,14 +503,19 @@ Page({
       saveToastTitle = '离线保存成功'
     }
 
+    const generatedId = `local-${Date.now()}`
+    const characterId = savedCharacter.id || savedCharacter.characterId || generatedId
+    savedCharacter = Object.assign({}, savedCharacter, { id: characterId })
+
     app.globalData.character = savedCharacter
+    wx.setStorageSync('characterId', characterId)
     wx.setStorageSync('pixelgrow_character', savedCharacter)
 
     this.setData({ saving: false })
     wx.showToast({ title: saveToastTitle, icon: 'success' })
 
     setTimeout(() => {
-      wx.navigateBack({ delta: 1 })
+      wx.reLaunch({ url: '/pages/home/index' })
     }, 700)
   },
 })
