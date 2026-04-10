@@ -1,1 +1,125 @@
-.container { padding: 32rpx; min-height: 100vh; }
+.container {
+  padding: 24rpx 16rpx 28rpx;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #16213e 0%, #121b33 55%, #0f172c 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.top-glow {
+  position: absolute;
+  top: -120rpx;
+  right: -60rpx;
+  width: 360rpx;
+  height: 360rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0) 72%);
+  pointer-events: none;
+}
+
+.world-header {
+  margin-bottom: 16rpx;
+}
+
+.header-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.welcome-text {
+  display: block;
+  margin-top: 10rpx;
+}
+
+.zoom-pill {
+  align-self: flex-start;
+  min-width: 112rpx;
+  text-align: center;
+  border-radius: 999rpx;
+  padding: 8rpx 16rpx;
+  font-size: 20rpx;
+  color: #16213e;
+  background: #ffd760;
+  border: 2rpx solid #ffe895;
+}
+
+.world-stage {
+  padding: 12rpx;
+  margin-top: 0;
+}
+
+.world-canvas {
+  width: 100%;
+  height: 700rpx;
+  border: 2rpx solid rgba(255, 215, 0, 0.5);
+  border-radius: 10rpx;
+  box-shadow: inset 0 0 28rpx rgba(255, 215, 0, 0.08);
+}
+
+.quick-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+  padding: 0 4rpx;
+}
+
+.action-btn {
+  flex: 1;
+  background: #1a1a2e;
+  border: 2rpx solid #ffd760;
+  border-radius: 8rpx;
+  padding: 18rpx 0;
+  text-align: center;
+  box-shadow: 0 6rpx 0 #0f1425;
+}
+
+.action-btn text {
+  font-size: 24rpx;
+  color: #ffd760;
+}
+
+.info-panel {
+  margin-top: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.info-title {
+  margin-bottom: 4rpx;
+}
+
+.info-name {
+  color: #ffe08a;
+  font-size: 28rpx;
+}
+
+.info-desc {
+  color: #d4d8e9;
+  line-height: 1.55;
+}
+
+.info-tip {
+  color: #9eaad2;
+  font-size: 22rpx;
+}
+
+.loading-line,
+.error-line {
+  border-radius: 8rpx;
+  padding: 10rpx 14rpx;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+}
+
+.loading-line {
+  color: #e4d8ab;
+  background: rgba(255, 215, 0, 0.12);
+}
+
+.error-line {
+  color: #ffb7b7;
+  background: rgba(255, 92, 92, 0.14);
+}
