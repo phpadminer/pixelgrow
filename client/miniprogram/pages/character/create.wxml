@@ -1,0 +1,93 @@
+<view class="container">
+  <view class="pixel-card section">
+    <text class="section-title">角色信息</text>
+    <input
+      class="name-input"
+      placeholder="输入角色名字"
+      maxlength="12"
+      value="{{characterName}}"
+      bindinput="onNameInput"
+    />
+    <view class="preset-wrap">
+      <text class="label">快速模板</text>
+      <scroll-view scroll-x class="preset-scroll">
+        <view class="preset-list">
+          <view
+            wx:for="{{presets}}"
+            wx:key="id"
+            class="preset-item {{selectedPresetId === item.id ? 'active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="onSelectPreset"
+          >
+            {{item.name}}
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view class="pixel-card section">
+    <text class="section-title">捏脸参数</text>
+
+    <view class="row">
+      <text class="label">肤色</text>
+      <picker mode="selector" range="{{skinTones}}" range-key="label" value="{{skinToneIndex}}" bindchange="onSkinToneChange">
+        <view class="picker-value">{{skinTones[skinToneIndex].label}}</view>
+      </picker>
+    </view>
+
+    <view class="row">
+      <text class="label">发型</text>
+      <picker mode="selector" range="{{availableHairStyles}}" range-key="label" value="{{hairStyleIndex}}" bindchange="onHairStyleChange">
+        <view class="picker-value">{{availableHairStyles[hairStyleIndex].label}}</view>
+      </picker>
+    </view>
+
+    <view class="row">
+      <text class="label">发色</text>
+      <picker mode="selector" range="{{hairColors}}" range-key="label" value="{{hairColorIndex}}" bindchange="onHairColorChange">
+        <view class="picker-value">{{hairColors[hairColorIndex].label}}</view>
+      </picker>
+    </view>
+
+    <view class="row">
+      <text class="label">表情</text>
+      <picker mode="selector" range="{{expressions}}" range-key="label" value="{{expressionIndex}}" bindchange="onExpressionChange">
+        <view class="picker-value">{{expressions[expressionIndex].label}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="pixel-card section">
+    <text class="section-title">8x8 像素编辑器</text>
+    <view class="canvas-wrap">
+      <canvas id="editorCanvas" type="2d" class="editor-canvas" bindtouchstart="onGridTouch" bindtouchmove="onGridTouch"></canvas>
+    </view>
+
+    <text class="label">画笔颜色</text>
+    <view class="palette">
+      <view
+        wx:for="{{palette}}"
+        wx:key="value"
+        class="palette-item {{currentColor === item.value ? 'active' : ''}}"
+        style="background-color: {{item.value === 'transparent' ? '#ffffff' : item.value}}"
+        data-color="{{item.value}}"
+        bindtap="onSelectColor"
+      >
+        <text wx:if="{{item.value === 'transparent'}}" class="transparent-mark">×</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="pixel-card section">
+    <text class="section-title">实时预览</text>
+    <view class="preview-wrap">
+      <canvas id="previewCanvas" type="2d" class="preview-canvas"></canvas>
+    </view>
+  </view>
+
+  <view class="actions">
+    <button class="btn secondary" bindtap="onReset">重置</button>
+    <button class="btn primary" loading="{{saving}}" bindtap="onSaveCharacter">保存角色</button>
+  </view>
+</view>
