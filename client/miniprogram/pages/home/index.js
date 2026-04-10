@@ -1,5 +1,24 @@
 const app = getApp()
 
+function getAppearanceLabel(appearance = {}) {
+  const parts = [appearance.hairStyle, appearance.expression].filter(Boolean)
+  return parts.length ? `外观: ${parts.join(' · ')}` : '见习骑士'
+}
+
+function getLocalCharacter() {
+  const localCharacter = wx.getStorageSync('pixelgrow_character') || app.globalData.character
+  if (!localCharacter) {
+    return null
+  }
+
+  return {
+    name: localCharacter.name || '小小冒险家',
+    level: localCharacter.level || 1,
+    exp: localCharacter.exp || 20,
+    profession: getAppearanceLabel(localCharacter.appearance || {}),
+  }
+}
+
 Page({
   data: {
     character: {
@@ -44,9 +63,11 @@ Page({
   },
 
   async loadHomeSummary(byPullDown = false) {
+    const localCharacter = getLocalCharacter()
     this.setData({
       loading: true,
       errorMessage: '',
+      character: localCharacter || this.data.character,
     })
 
     try {
@@ -62,7 +83,7 @@ Page({
       ).length
 
       this.setData({
-        character: response.character || this.data.character,
+        character: response.character || localCharacter || this.data.character,
         pet: response.pet || this.data.pet,
         todayTasks,
         expPercent: response.expPercent || 0,
@@ -73,6 +94,7 @@ Page({
     } catch (error) {
       console.error('[Home] load summary failed:', error)
       this.setData({
+        character: localCharacter || this.data.character,
         errorMessage: '加载失败，已显示本地缓存内容',
       })
       wx.showToast({

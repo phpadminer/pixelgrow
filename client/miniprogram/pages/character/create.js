@@ -503,14 +503,23 @@ Page({
       saveToastTitle = '离线保存成功'
     }
 
+    const realCharacterId = savedCharacter.id || savedCharacter.characterId
+    const characterId = realCharacterId || `local-${Date.now()}`
+    savedCharacter = Object.assign({}, savedCharacter, { id: characterId })
+
     app.globalData.character = savedCharacter
+    // Only persist characterId if it came from server. Local fallback ids would
+    // cause /api/home/summary to 404 on next launch and trap the user in a loop.
+    if (realCharacterId) {
+      wx.setStorageSync('characterId', realCharacterId)
+    }
     wx.setStorageSync('pixelgrow_character', savedCharacter)
 
     this.setData({ saving: false })
     wx.showToast({ title: saveToastTitle, icon: 'success' })
 
     setTimeout(() => {
-      wx.navigateBack({ delta: 1 })
+      wx.reLaunch({ url: '/pages/home/index' })
     }, 700)
   },
 })

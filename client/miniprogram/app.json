@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/welcome/index",
     "pages/home/index",
     "pages/world/index",
     "pages/tasks/index",
