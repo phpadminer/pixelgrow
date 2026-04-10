@@ -17,6 +17,7 @@
     "@nestjs/websockets": "^11.0.0",
     "@prisma/client": "^6.0.0",
     "ioredis": "^5.4.0",
+    "@nestjs/jwt": "^11.0.0",
     "class-validator": "^0.14.0",
     "class-transformer": "^0.5.1"
   },
