@@ -6,7 +6,7 @@ App({
     userInfo: null,
     familyId: null,
     character: null,
-    serverUrl: 'http://localhost:3000',
+    serverUrl: 'http://localhost:3001',
   },
 
   onLaunch() {
