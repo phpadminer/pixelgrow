@@ -1,1 +1,80 @@
-<view class="container"><text class="title">tasks</text></view>
+<view class="container">
+  <view class="pixel-card header-card">
+    <view>
+      <text class="title">今日任务</text>
+      <text class="subtitle">按类型推进成长冒险</text>
+    </view>
+    <view class="exp-bank">
+      <text class="exp-label">TODAY EXP</text>
+      <text class="exp-value">{{totalExpToday}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-text">任务加载中...</view>
+  <view wx:if="{{errorText}}" class="state-text error-text">{{errorText}}</view>
+
+  <block wx:for="{{groupedTasks}}" wx:key="type" wx:for-item="group">
+    <view class="pixel-card group-card">
+      <text class="group-title">{{group.title}}</text>
+
+      <block wx:for="{{group.items}}" wx:key="id" wx:for-item="item" wx:for-index="index">
+        <view class="task-card" data-id="{{item.id}}" bindtap="onTaskTap">
+          <view class="task-left">
+            <text class="task-icon">{{item.icon}}</text>
+          </view>
+
+          <view class="task-middle">
+            <text class="task-title">{{item.title}}</text>
+            <text class="task-reward">+{{item.rewards.exp}} EXP · +{{item.rewards.coins}} Coins</text>
+          </view>
+
+          <view class="task-right">
+            <text class="task-status {{item.status === 'COMPLETED' ? 'done' : ''}}">{{item.statusLabel}}</text>
+            <button
+              wx:if="{{item.status !== 'COMPLETED'}}"
+              id="complete-btn-{{item.id}}"
+              class="complete-btn"
+              size="mini"
+              loading="{{savingId === item.id}}"
+              disabled="{{savingId === item.id}}"
+              data-id="{{item.id}}"
+              catchtap="onCompleteTask"
+            >
+              完成
+            </button>
+          </view>
+        </view>
+      </block>
+    </view>
+  </block>
+
+  <view wx:if="{{!loading && groupedTasks.length === 0}}" class="state-text">今天暂时没有任务，去冒险地图看看吧。</view>
+
+  <view wx:if="{{showDetail}}" class="modal-mask" bindtap="closeDetail">
+    <view class="modal-card" catchtap="noop">
+      <view class="modal-head">
+        <text class="modal-icon">{{selectedTask.icon}}</text>
+        <view>
+          <text class="modal-title">{{selectedTask.title}}</text>
+          <text class="modal-type">{{selectedTask.statusLabel}}</text>
+        </view>
+      </view>
+
+      <view class="modal-body">
+        <text class="modal-desc">{{selectedTask.description}}</text>
+        <text class="modal-reward">奖励：+{{selectedTask.rewards.exp}} EXP · +{{selectedTask.rewards.coins}} Coins</text>
+      </view>
+
+      <button class="pixel-button modal-close" bindtap="closeDetail">知道了</button>
+    </view>
+  </view>
+
+  <view
+    wx:if="{{expFlyVisible}}"
+    class="exp-fly"
+    style="{{expFlyStyle}}"
+    animation="{{expFlyAnimation}}"
+  >
+    +{{expFlyValue}} EXP
+  </view>
+</view>
