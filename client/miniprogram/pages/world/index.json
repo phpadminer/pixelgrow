@@ -1,1 +1,6 @@
-{}
+{
+  "navigationBarTitleText": "像素世界",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#16213e",
+  "backgroundTextStyle": "light"
+}

@@ -1,1 +1,42 @@
-<view class="container"><text class="title">world</text></view>
+<view class="container">
+  <view class="top-glow"></view>
+
+  <view class="pixel-card world-header">
+    <view class="header-main">
+      <view>
+        <text class="title">像素世界</text>
+        <text class="subtitle welcome-text">{{character.name}} · Lv.{{character.level}} · {{character.profession}}</text>
+      </view>
+      <view class="zoom-pill">缩放 {{zoomText}}</view>
+    </view>
+    <view wx:if="{{loading}}" class="loading-line">同步角色中...</view>
+    <view wx:if="{{errorMessage}}" class="error-line">{{errorMessage}}</view>
+  </view>
+
+  <view class="pixel-card world-stage">
+    <canvas
+      id="worldCanvas"
+      type="2d"
+      canvas-id="worldCanvas"
+      class="world-canvas"
+      disable-scroll="true"
+      bindtouchstart="onTouchStart"
+      bindtouchmove="onTouchMove"
+      bindtouchend="onTouchEnd"
+      bindtouchcancel="onTouchEnd"
+    ></canvas>
+  </view>
+
+  <view class="quick-actions">
+    <view class="action-btn" bindtap="onResetView"><text>重置视角</text></view>
+    <view class="action-btn" bindtap="onFocusHome"><text>定位家园</text></view>
+    <view class="action-btn" bindtap="onFocusSchool"><text>定位学校</text></view>
+  </view>
+
+  <view class="pixel-card info-panel">
+    <text class="title info-title">区域信息</text>
+    <text class="subtitle info-name">{{selectedBuildingName}}</text>
+    <text class="subtitle info-desc">{{selectedBuildingDesc}}</text>
+    <text class="subtitle info-tip">操作提示：单指拖动平移，双指可缩放，点击建筑查看详情。</text>
+  </view>
+</view>
