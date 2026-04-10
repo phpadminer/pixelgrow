@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common'
+import { PrismaModule } from './prisma/prisma.module'
+import { FamilyModule } from './modules/family/family.module'
 
 @Module({
   imports: [
+    PrismaModule,
+    FamilyModule,
     // TODO: Add feature modules
     // UserModule,
-    // FamilyModule,
     // TaskModule,
     // CharacterModule,
     // WorldModule,
