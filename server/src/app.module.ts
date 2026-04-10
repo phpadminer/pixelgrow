@@ -1,18 +1,9 @@
 import { Module } from '@nestjs/common'
+import { HomeModule } from './modules/home/home.module'
 
 @Module({
   imports: [
-    // TODO: Add feature modules
-    // UserModule,
-    // FamilyModule,
-    // TaskModule,
-    // CharacterModule,
-    // WorldModule,
-    // KnowledgeModule,
-    // SocialModule,
-    // AchievementModule,
-    // MapModule,
-    // CreativeModule,
+    HomeModule,
   ],
 })
 export class AppModule {}

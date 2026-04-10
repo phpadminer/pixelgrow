@@ -3,75 +3,103 @@ const app = getApp()
 Page({
   data: {
     character: {
-      name: '',
+      name: '小小冒险家',
       level: 1,
-      exp: 0,
-      profession: 'adventurer',
+      exp: 20,
+      profession: '见习骑士',
     },
     pet: {
-      name: '',
+      name: '像素团子',
       level: 1,
       mood: 'happy',
+      species: 'slime',
     },
-    todayTasks: [],
-    expPercent: 0,
+    todayTasks: [
+      {
+        id: 'local-task-1',
+        icon: '⭐',
+        title: '领取今天的成长任务',
+        status: 'PENDING',
+        rewards: { exp: 10, coins: 8 },
+      },
+    ],
+    expPercent: 20,
     nextLevelExp: 100,
+    loading: false,
+    errorMessage: '',
+    completedCount: 0,
+    totalCount: 1,
   },
 
   onLoad() {
-    this.loadCharacter()
-    this.loadTodayTasks()
+    this.loadHomeSummary()
   },
 
   onShow() {
-    this.loadTodayTasks()
+    this.loadHomeSummary()
   },
 
-  async loadCharacter() {
-    // TODO: Fetch from server
+  onPullDownRefresh() {
+    this.loadHomeSummary(true)
+  },
+
+  async loadHomeSummary(byPullDown = false) {
     this.setData({
-      character: {
-        name: '小明',
-        level: 5,
-        exp: 340,
-        profession: '音乐骑士',
-      },
-      pet: {
-        name: '火小狐',
-        level: 3,
-        mood: 'happy',
-      },
-      expPercent: 68,
-      nextLevelExp: 500,
+      loading: true,
+      errorMessage: '',
     })
+
+    try {
+      const serverUrl = app.globalData.serverUrl || 'http://localhost:3000'
+      const response = await this.request({
+        url: `${serverUrl}/api/home/summary`,
+        method: 'GET',
+      })
+
+      const todayTasks = response.todayTasks || []
+      const completedCount = todayTasks.filter(
+        (task) => task.status === 'COMPLETED',
+      ).length
+
+      this.setData({
+        character: response.character || this.data.character,
+        pet: response.pet || this.data.pet,
+        todayTasks,
+        expPercent: response.expPercent || 0,
+        nextLevelExp: response.nextLevelExp || 100,
+        completedCount,
+        totalCount: todayTasks.length,
+      })
+    } catch (error) {
+      console.error('[Home] load summary failed:', error)
+      this.setData({
+        errorMessage: '加载失败，已显示本地缓存内容',
+      })
+      wx.showToast({
+        title: '首页数据加载失败',
+        icon: 'none',
+      })
+    } finally {
+      this.setData({ loading: false })
+      if (byPullDown) {
+        wx.stopPullDownRefresh()
+      }
+    }
   },
 
-  async loadTodayTasks() {
-    // TODO: Fetch from server
-    this.setData({
-      todayTasks: [
-        {
-          id: '1',
-          icon: '📚',
-          title: '完成今日作业',
-          rewards: { exp: 30, coins: 20 },
-          status: 'PENDING',
+  request(options) {
+    return new Promise((resolve, reject) => {
+      wx.request({
+        ...options,
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(res.data || {})
+            return
+          }
+          reject(new Error(`HTTP_${res.statusCode}`))
         },
-        {
-          id: '2',
-          icon: '🎵',
-          title: '圆号练习 20 分钟',
-          rewards: { exp: 40, coins: 25 },
-          status: 'PENDING',
-        },
-        {
-          id: '3',
-          icon: '🏠',
-          title: '整理书桌',
-          rewards: { exp: 15, coins: 10 },
-          status: 'COMPLETED',
-        },
-      ],
+        fail: (err) => reject(err),
+      })
     })
   },
 
