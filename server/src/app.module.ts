@@ -5,6 +5,7 @@ import { FamilyModule } from './modules/family/family.module'
 import { CharacterModule } from './modules/character/character.module'
 import { TaskModule } from './modules/task/task.module'
 import { HomeModule } from './modules/home/home.module'
+import { WorldModule } from './modules/world/world.module'
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { HomeModule } from './modules/home/home.module'
     CharacterModule,
     TaskModule,
     HomeModule,
+    WorldModule,
   ],
 })
 export class AppModule {}
