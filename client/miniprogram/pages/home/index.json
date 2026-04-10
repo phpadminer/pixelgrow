@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "PixelGrow"
+  "navigationBarTitleText": "PixelGrow",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#16213e",
+  "backgroundTextStyle": "light"
 }

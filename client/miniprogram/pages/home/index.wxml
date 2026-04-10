@@ -1,55 +1,67 @@
 <view class="container">
-  <!-- Pet Display Area -->
+  <view class="top-glow"></view>
+
   <view class="pixel-card pet-area">
-    <view class="pet-sprite">
-      <!-- TODO: PixiJS canvas for pet animation -->
-      <text class="pet-placeholder">🐾</text>
+    <view class="pet-stage mood-{{pet.mood}}">
+      <view class="pet-sprite">
+        <text class="pet-face">◕ ◕</text>
+      </view>
+      <view class="pet-shadow"></view>
     </view>
     <view class="pet-info">
-      <text class="title">{{pet.name}}</text>
-      <text class="subtitle">Lv.{{pet.level}} · {{pet.mood}}</text>
+      <text class="title pet-name">{{pet.name}}</text>
+      <text class="subtitle">Lv.{{pet.level}} · {{pet.species}}</text>
+      <text class="mood-pill mood-{{pet.mood}}">{{pet.mood}}</text>
     </view>
   </view>
 
-  <!-- Character Summary -->
   <view class="pixel-card character-summary">
     <view class="char-header">
       <text class="title">{{character.name}}</text>
       <text class="subtitle">{{character.profession}} · Lv.{{character.level}}</text>
     </view>
-    <view class="exp-bar">
+    <view class="exp-panel">
       <view class="progress-bar">
-        <view class="progress-fill" style="width: {{expPercent}}%; background-color: #FFD700;"></view>
+        <view class="progress-fill exp-fill" style="width: {{expPercent}}%;"></view>
       </view>
-      <text class="subtitle">{{character.exp}} / {{nextLevelExp}} EXP</text>
+      <view class="exp-meta">
+        <text class="subtitle">{{character.exp}} / {{nextLevelExp}} EXP</text>
+        <text class="subtitle">{{expPercent}}%</text>
+      </view>
     </view>
   </view>
 
-  <!-- Today's Tasks -->
   <view class="pixel-card tasks-today">
-    <text class="title">Today's Quests</text>
+    <view class="tasks-head">
+      <text class="title">Today's Quests</text>
+      <text class="subtitle">{{completedCount}} / {{totalCount}} 已完成</text>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading-line">同步中...</view>
+    <view wx:if="{{errorMessage}}" class="error-line">{{errorMessage}}</view>
+    <view wx:if="{{!todayTasks.length && !loading}}" class="empty-line">今天还没有任务，去创建一个吧</view>
+
     <view wx:for="{{todayTasks}}" wx:key="id" class="task-item">
       <view class="task-icon">{{item.icon}}</view>
       <view class="task-info">
         <text class="task-title">{{item.title}}</text>
         <text class="task-reward">+{{item.rewards.exp}} EXP · +{{item.rewards.coins}} Coins</text>
       </view>
-      <view class="task-status {{item.status === 'COMPLETED' ? 'completed' : ''}}">
-        {{item.status === 'COMPLETED' ? '✅' : '⬜'}}
+      <view class="task-status {{item.status === 'COMPLETED' ? 'status-completed' : item.status === 'IN_PROGRESS' ? 'status-progress' : 'status-pending'}}">
+        {{item.status === 'COMPLETED' ? '已完成' : item.status === 'IN_PROGRESS' ? '进行中' : '待完成'}}
       </view>
     </view>
   </view>
 
-  <!-- Quick Actions -->
   <view class="quick-actions">
-    <view class="action-btn" bindtap="onNfcCheckin">
-      <text>📱 NFC Check-in</text>
+    <view class="action-btn gold" bindtap="onNfcCheckin">
+      <text>NFC 打卡</text>
     </view>
     <view class="action-btn" bindtap="onStartAdventure">
-      <text>⚔️ Adventure</text>
+      <text>开始冒险</text>
     </view>
     <view class="action-btn" bindtap="onCreateWork">
-      <text>✏️ Create</text>
+      <text>去创作</text>
     </view>
   </view>
 </view>
