@@ -3,13 +3,19 @@ import {
   IsInt,
   IsOptional,
   IsObject,
+  IsBoolean,
   Min,
   MaxLength,
 } from 'class-validator'
 
 export class CreateCharacterDto {
+  @IsOptional()
   @IsString()
-  userId: string
+  userId?: string
+
+  @IsOptional()
+  @IsBoolean()
+  isGuest?: boolean = true
 
   @IsString()
   @MaxLength(50)
