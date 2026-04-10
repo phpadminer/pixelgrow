@@ -1,0 +1,158 @@
+.container {
+  min-height: 100vh;
+  background: #0f172a;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.pixel-card {
+  background: #1e293b;
+  border: 2rpx solid #334155;
+  border-radius: 20rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  display: block;
+  color: #f8fafc;
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.label {
+  color: #94a3b8;
+  font-size: 24rpx;
+}
+
+.name-input {
+  height: 72rpx;
+  border-radius: 12rpx;
+  background: #0f172a;
+  border: 2rpx solid #334155;
+  color: #f8fafc;
+  padding: 0 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.preset-wrap {
+  margin-top: 8rpx;
+}
+
+.preset-scroll {
+  white-space: nowrap;
+  margin-top: 8rpx;
+}
+
+.preset-list {
+  display: inline-flex;
+}
+
+.preset-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid #475569;
+  color: #cbd5e1;
+  font-size: 24rpx;
+  margin-right: 12rpx;
+}
+
+.preset-item.active {
+  background: #2563eb;
+  color: #f8fafc;
+  border-color: #3b82f6;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid #334155;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.picker-value {
+  min-width: 220rpx;
+  text-align: right;
+  color: #e2e8f0;
+  font-size: 26rpx;
+}
+
+.canvas-wrap,
+.preview-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 12rpx 0 16rpx;
+}
+
+.editor-canvas {
+  width: 320px;
+  height: 320px;
+  border-radius: 12rpx;
+  background: #0b1220;
+}
+
+.preview-canvas {
+  width: 200px;
+  height: 200px;
+  border-radius: 12rpx;
+  background: #0b1220;
+}
+
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 10rpx;
+}
+
+.palette-item {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.palette-item.active {
+  border-color: #f8fafc;
+  transform: scale(1.08);
+}
+
+.transparent-mark {
+  color: #334155;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  gap: 16rpx;
+  margin: 24rpx 0;
+}
+
+.btn {
+  flex: 1;
+  border-radius: 14rpx;
+  font-size: 28rpx;
+}
+
+.btn.secondary {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.btn.primary {
+  background: #2563eb;
+  color: #f8fafc;
+}

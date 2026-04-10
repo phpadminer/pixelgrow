@@ -1,1 +1,35 @@
-.container { padding: 32rpx; min-height: 100vh; }
+.container {
+  min-height: 100vh;
+  background: #0f172a;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.pixel-card {
+  background: #1e293b;
+  border: 2rpx solid #334155;
+  border-radius: 20rpx;
+  padding: 24rpx;
+}
+
+.title {
+  display: block;
+  font-size: 38rpx;
+  color: #f8fafc;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+
+.subtitle {
+  display: block;
+  color: #cbd5e1;
+  font-size: 26rpx;
+  margin-bottom: 20rpx;
+}
+
+.create-btn {
+  background: #2563eb;
+  color: #f8fafc;
+  border-radius: 14rpx;
+  font-size: 28rpx;
+}

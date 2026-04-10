@@ -1,1 +1,8 @@
-<view class="container"><text class="title">character</text></view>
+<view class="container">
+  <view class="pixel-card">
+    <text class="title">角色分身</text>
+    <text class="subtitle" wx:if="{{character}}">{{character.name}}</text>
+    <text class="subtitle" wx:else>还没有创建角色，先捏一个像素分身吧。</text>
+    <button class="create-btn" bindtap="onCreateCharacter">{{character ? '重新捏脸' : '创建角色'}}</button>
+  </view>
+</view>

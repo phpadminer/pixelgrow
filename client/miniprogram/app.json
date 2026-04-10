@@ -4,6 +4,7 @@
     "pages/world/index",
     "pages/tasks/index",
     "pages/character/index",
+    "pages/character/create",
     "pages/map/index",
     "pages/creative/index",
     "pages/social/index",
