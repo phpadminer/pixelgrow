@@ -1,12 +1,15 @@
 const request = require('./utils/request')
 const store = require('./utils/store')
 
+const FAMILY_PLAN_SERVER_URL = 'https://wxapi.szsyforging.com'
+
 App({
   globalData: {
     userInfo: null,
     familyId: null,
     character: null,
-    serverUrl: 'http://localhost:3001',
+    appMode: 'family-plan',
+    serverUrl: FAMILY_PLAN_SERVER_URL,
   },
 
   onLaunch() {
@@ -16,7 +19,9 @@ App({
     store.subscribe((nextState) => {
       this.syncGlobalData(nextState)
     })
-    this.checkLogin()
+    if (this.globalData.appMode !== 'family-plan') {
+      this.checkLogin()
+    }
   },
 
   syncGlobalData(state) {
@@ -26,6 +31,18 @@ App({
   },
 
   handleInitialRoute() {
+    if (this.globalData.appMode === 'family-plan') {
+      setTimeout(() => {
+        const targetPath = '/pages/family-plan/index'
+        const pages = getCurrentPages()
+        const currentRoute = pages && pages.length ? `/${pages[pages.length - 1].route}` : ''
+        if (currentRoute !== targetPath) {
+          wx.reLaunch({ url: targetPath })
+        }
+      }, 0)
+      return
+    }
+
     const hasCharacter = !!wx.getStorageSync('characterId')
     const targetPath = hasCharacter ? '/pages/home/index' : '/pages/welcome/index'
 

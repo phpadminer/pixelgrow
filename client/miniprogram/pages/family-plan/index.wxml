@@ -1,0 +1,877 @@
+<view class="family-page">
+  <view wx:if="{{isLoggedIn}}" class="page-bg">
+    <image class="bg-foot bg-chicken-foot" src="/assets/family/chicken-foot.svg" mode="aspectFit" />
+    <image class="bg-foot bg-sheep-hoof" src="/assets/family/sheep-hoof.svg" mode="aspectFit" />
+    <image wx:if="{{isParent}}" class="bg-avatar bg-monkey" src="/assets/family/monkey.svg" mode="aspectFit" />
+    <image wx:if="{{isParent}}" class="bg-avatar bg-dragon" src="/assets/family/dragon.svg" mode="aspectFit" />
+    <image wx:if="{{isChild && selectedChild}}" class="bg-avatar bg-child" src="{{selectedChild.avatarPath}}" mode="aspectFit" />
+    <image wx:if="{{isChild && selectedChild}}" class="bg-pattern" src="{{selectedChild.patternPath}}" mode="aspectFit" />
+  </view>
+
+  <block wx:if="{{!isLoggedIn}}">
+    <view class="login-hero" style="padding-top: {{customNavPadding}}px;">
+      <view class="hero-family">
+        <image class="hero-avatar hero-side" src="/assets/family/monkey.svg" mode="aspectFit" />
+        <image class="hero-avatar" src="/assets/family/lamb.svg" mode="aspectFit" />
+        <image class="hero-avatar" src="/assets/family/chick.svg" mode="aspectFit" />
+        <image class="hero-avatar hero-side" src="/assets/family/dragon.svg" mode="aspectFit" />
+      </view>
+      <view class="hero-title">伴学点滴</view>
+      <view class="hero-subtitle">每天一点点，完成就有回响</view>
+    </view>
+
+    <view class="login-card">
+      <view class="eyebrow">家庭计划</view>
+      <view class="page-title">登录</view>
+
+      <view class="role-switch">
+        <view class="role-option {{loginRole === 'parent' ? 'active' : ''}}" data-role="parent" bindtap="switchLoginRole">家长</view>
+        <view class="role-option {{loginRole === 'child' ? 'active' : ''}}" data-role="child" bindtap="switchLoginRole">孩子</view>
+      </view>
+
+      <view wx:if="{{loginRole === 'parent'}}">
+        <view class="field-label">手机号</view>
+        <input class="text-input" data-field="phone" value="{{phone}}" bindinput="onLoginInput" type="number" />
+        <view class="field-label">验证码</view>
+        <input class="text-input" data-field="code" value="{{code}}" bindinput="onLoginInput" type="number" />
+      </view>
+
+      <view wx:else>
+        <view class="field-label">孩子码</view>
+        <input class="text-input" data-field="childCode" value="{{childCode}}" bindinput="onLoginInput" />
+        <view class="field-label">PIN</view>
+        <input class="text-input" data-field="pinCode" value="{{pinCode}}" bindinput="onLoginInput" password="{{true}}" />
+      </view>
+
+      <button class="primary-button" loading="{{loading}}" bindtap="submitLogin">登录</button>
+      <view class="helper-text">演示账号：家长 13800000000 / 123456；孩子 GEGE01 或 MEIMEI01 / 2580</view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="app-shell" style="padding-top: {{customNavPadding}}px;">
+      <view class="topbar">
+        <view>
+          <view class="eyebrow">{{isParent ? '家长端' : '孩子端'}}</view>
+          <view class="page-title">{{pageTitle}}</view>
+        </view>
+        <view class="header-actions">
+          <button class="header-icon-button {{activeTab === 'notifications' ? 'active' : ''}}" bindtap="openNotifications" aria-label="通知">
+            <view class="bell-shape"></view>
+            <view wx:if="{{notificationCount > 0}}" class="notification-badge">{{notificationCount}}</view>
+          </button>
+          <button class="role-button" bindtap="logout">
+            <view class="logout-shape"></view>
+            <text>退出</text>
+          </button>
+        </view>
+      </view>
+
+      <view class="children-row" wx:if="{{activeTab !== 'notifications' && children.length > 1}}">
+        <view
+          wx:for="{{children}}"
+          wx:key="id"
+          class="child-card {{item.id === selectedChildId ? 'active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="switchChild"
+        >
+          <image class="child-avatar" src="{{item.avatarPath}}" mode="aspectFit" />
+          <view>
+            <view class="child-name">{{item.name}}</view>
+            <view class="muted">{{item.grade}} · {{item.points}} 积分</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="summary-card" wx:if="{{summaryCardVisible && selectedChild}}">
+        <image class="summary-pattern" src="{{selectedChild.patternPath}}" mode="aspectFit" />
+        <view class="rate-ring" style="{{rateRingStyle}}">
+          <view class="ring-inner">{{completionRate.percent}}%</view>
+        </view>
+        <view class="summary-main">
+          <view class="muted strong">{{selectedChild.name}} · {{summaryRateLabel}}</view>
+          <view class="summary-percent">{{completionRate.percent}}%</view>
+          <view class="muted">已完成 {{completionRate.completed}} / 目标 {{completionRate.total}}</view>
+          <view class="point-pill">☆ {{selectedChild.points}} 积分</view>
+        </view>
+      </view>
+
+      <view class="tab-content" wx:if="{{activeTab === 'today'}}">
+        <view class="focus-card">
+          <view>
+            <view class="muted strong">专注时间 · 番茄钟</view>
+            <view class="focus-time">{{defaultFocusDisplay}}</view>
+            <view class="focus-edit-row">
+              <view class="focus-edit-field">
+                <view class="mini-label">专注</view>
+                <input class="mini-input" type="number" data-field="defaultFocusMinutes" value="{{defaultFocusMinutes}}" bindinput="onDefaultTimerInput" />
+              </view>
+              <view class="focus-edit-field">
+                <view class="mini-label">休息</view>
+                <input class="mini-input" type="number" data-field="defaultBreakMinutes" value="{{defaultBreakMinutes}}" bindinput="onDefaultTimerInput" />
+              </view>
+            </view>
+            <view class="muted">默认番茄钟，任务里可以单独设置。</view>
+          </view>
+          <button class="primary-button compact" bindtap="openTimer">开始专注</button>
+        </view>
+
+        <view class="quick-actions" wx:if="{{isParent}}">
+          <view class="quick-card course" data-kind="courses" bindtap="openItemForm">＋ 加课程</view>
+          <view class="quick-card habit" data-kind="habits" bindtap="openItemForm">✓ 加习惯</view>
+          <view class="quick-card task" data-kind="tasks" bindtap="openItemForm">▣ 加任务</view>
+          <view class="quick-card milestone" data-kind="milestones" bindtap="openItemForm">◷ 倒计时</view>
+        </view>
+
+        <view class="course-summary" wx:if="{{isParent && courseSummary.length > 0}}">
+          <view class="section-head course-summary-head">
+            <view>
+              <view class="section-title">课程汇总</view>
+              <view class="muted">日期选错后，点课程修改周期和上课时间</view>
+            </view>
+          </view>
+          <view
+            wx:for="{{courseSummary}}"
+            wx:key="id"
+            class="course-summary-row"
+            data-id="{{item.id}}"
+            bindtap="openCourseFromSummary"
+          >
+            <view class="course-summary-main">
+              <view class="course-summary-title">{{item.title}}</view>
+              <view class="muted">{{item.teacher}} · {{item.durationText}} · {{item.rewardText}}</view>
+              <view class="course-summary-stats">{{item.lessonStatsText}}</view>
+              <view class="course-summary-life">{{item.lessonCompletionText}}</view>
+              <view class="course-summary-schedule">{{item.scheduleText}}</view>
+              <view class="course-summary-life">周期：{{item.lifecycleText}}</view>
+            </view>
+            <view class="course-summary-edit">修改</view>
+          </view>
+        </view>
+
+        <view class="section-head">
+          <view>
+            <view class="section-title">今天要完成</view>
+            <view class="muted">按顺序完成，专注一项就够</view>
+          </view>
+        </view>
+
+        <view class="empty-card" wx:if="{{todayAgenda.length === 0}}">今天还没有安排。</view>
+        <view
+          wx:for="{{todayAgenda}}"
+          wx:key="id"
+          class="agenda-card {{item.className}} {{item.completed ? 'done' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="openEditItem"
+        >
+          <view class="agenda-time">{{item.time}}</view>
+          <view class="agenda-icon">{{item.category === 'course' ? '书' : item.category === 'habit' ? '✓' : item.category === 'task' ? '夹' : 'D'}}</view>
+          <view class="agenda-main">
+            <view class="agenda-title-row">
+              <view class="agenda-title">{{item.title}}</view>
+            </view>
+            <view class="muted">{{item.meta}} · {{item.focusLabel || item.label}}</view>
+            <view class="reward-line">{{item.category === 'milestone' ? item.meta : item.successRule}}</view>
+          </view>
+          <view class="agenda-actions">
+            <button
+              wx:if="{{item.category !== 'milestone'}}"
+              class="agenda-action-button {{item.completed ? 'checked' : ''}} {{item.pendingCompletion ? 'pending' : ''}} {{item.isMakeup ? 'makeup' : ''}} {{!item.canToggleCompletion ? 'disabled' : ''}}"
+              data-id="{{item.id}}"
+              catchtap="toggleCompletion"
+            >{{item.actionText}}</button>
+          </view>
+        </view>
+      </view>
+
+      <view class="tab-content" wx:elif="{{activeTab === 'calendar'}}">
+        <view class="calendar-view-switch">
+          <view
+            wx:for="{{calendarViewOptions}}"
+            wx:key="key"
+            class="calendar-view-option {{calendarViewMode === item.key ? 'active' : ''}}"
+            data-mode="{{item.key}}"
+            bindtap="setCalendarView"
+          >{{item.label}}</view>
+        </view>
+
+        <view class="calendar-card">
+          <view class="calendar-header">
+            <button class="square-button" data-amount="-1" bindtap="moveSelectedDate">‹</button>
+            <picker mode="date" value="{{selectedDate}}" bindchange="changeSelectedDate">
+              <view class="calendar-title">{{calendarViewMode === 'term' || calendarViewMode === 'year' ? periodTitle : selectedMonthLabel}}</view>
+              <view class="muted">{{calendarViewMode === 'term' || calendarViewMode === 'year' ? periodSubtitle : selectedDateLabel}}</view>
+            </picker>
+            <button class="square-button" data-amount="1" bindtap="moveSelectedDate">›</button>
+          </view>
+
+          <view wx:if="{{calendarViewMode === 'day'}}" class="period-grid one">
+            <view class="period-card active">
+              <view class="period-label">{{selectedDateLabel}}</view>
+              <view class="period-count">{{selectedAgenda.length}}</view>
+              <view class="muted">安排</view>
+            </view>
+          </view>
+
+          <view wx:elif="{{calendarViewMode === 'week'}}" class="week-strip">
+            <view
+              wx:for="{{weekDays}}"
+              wx:key="value"
+              class="week-day {{item.selected ? 'active' : ''}}"
+              data-date="{{item.value}}"
+              bindtap="chooseCalendarDay"
+            >
+              <view>{{item.label}}</view>
+              <view class="week-day-number">{{item.day}}</view>
+              <view class="dot-row">
+                <view wx:for="{{item.dots}}" wx:for-item="dot" wx:key="*this" class="mini-dot" style="background: {{item.selected ? '#fff' : dot}};"></view>
+              </view>
+            </view>
+          </view>
+
+          <block wx:elif="{{calendarViewMode === 'month'}}">
+            <view class="weekday-row">
+            <view wx:for="{{weekdayLabels}}" wx:key="*this" class="weekday-cell">{{item}}</view>
+            </view>
+            <view class="calendar-grid">
+              <view
+                wx:for="{{calendarDays}}"
+                wx:key="value"
+                class="day-cell {{item.currentMonth ? '' : 'muted-day'}} {{item.selected ? 'selected' : ''}}"
+                data-date="{{item.value}}"
+                bindtap="chooseCalendarDay"
+              >
+                <view class="day-number">{{item.day}}</view>
+                <view class="dot-row">
+                  <view wx:for="{{item.dots}}" wx:for-item="dot" wx:key="*this" class="mini-dot" style="background: {{item.selected ? '#fff' : dot}};"></view>
+                </view>
+              </view>
+            </view>
+          </block>
+
+          <view wx:else class="period-grid">
+            <view wx:for="{{periodCards}}" wx:key="label" class="period-card {{item.selected ? 'active' : ''}}">
+              <view class="period-label">{{item.label}}</view>
+              <view class="period-count">{{item.count}}</view>
+              <view class="muted">安排</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="section-head calendar-agenda-head">
+          <view class="section-title">{{selectedDateLabel}} 安排</view>
+          <button wx:if="{{isParent}}" class="primary-button compact" data-kind="tasks" bindtap="openItemForm">＋ 加任务</button>
+        </view>
+        <view class="empty-card" wx:if="{{selectedAgenda.length === 0}}">这天没有安排。</view>
+        <view wx:for="{{selectedAgenda}}" wx:key="id" class="list-row" data-id="{{item.id}}" bindtap="openCalendarAgendaDetail">
+          <view class="list-tag {{item.className}}">{{item.time}}</view>
+          <view class="list-title">
+            <view>{{item.title}}</view>
+            <view wx:if="{{item.category === 'course'}}" class="list-subtitle">{{item.lessonTypeLabel}} · {{item.meta}}</view>
+          </view>
+          <button
+            wx:if="{{item.canToggleCompletion}}"
+            class="list-status-button {{item.isMakeup ? 'makeup' : ''}}"
+            data-id="{{item.id}}"
+            catchtap="toggleCompletion"
+          >
+            {{item.statusText}}
+          </button>
+          <view wx:else class="list-status {{item.completed ? 'done' : ''}} {{item.pendingCompletion ? 'pending' : ''}} {{item.category === 'milestone' ? 'milestone' : ''}}">
+            {{item.statusText}}
+          </view>
+        </view>
+      </view>
+
+      <view class="tab-content" wx:elif="{{activeTab === 'stats'}}">
+        <view class="trend-card">
+          <view class="trend-head">
+            <view>
+              <view class="section-title compact-title">完成率趋势</view>
+              <view class="muted">{{historySummary.detail}}</view>
+            </view>
+            <view class="trend-value">{{historySummary.value}}</view>
+          </view>
+          <view class="trend-bars">
+            <view wx:for="{{historyTrend}}" wx:key="date" class="trend-day">
+              <view class="trend-track">
+                <view
+                  class="trend-bar {{item.hasData ? '' : 'empty'}}"
+                  style="height: {{item.barHeight}}%;"
+                ></view>
+              </view>
+              <view class="trend-label">{{item.label}}</view>
+              <view class="trend-count">{{item.completed}}/{{item.total}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="section-title">分类统计</view>
+        <view class="stats-grid">
+          <view wx:for="{{categoryStats}}" wx:key="category" class="stat-card">
+            <view class="muted">{{item.label}}</view>
+            <view class="stat-percent">{{item.percent}}%</view>
+            <view class="muted">完成 {{item.completed}} / {{item.total}}</view>
+          </view>
+        </view>
+        <view class="countdown-card">
+          <view>
+            <view class="muted strong">积分流水</view>
+            <view class="summary-percent">{{pointSummary.net}}</view>
+          </view>
+          <view class="muted">获得 {{pointSummary.earned}}，兑换消费 {{pointSummary.spent}}</view>
+        </view>
+        <view class="empty-card" wx:if="{{visiblePointLedger.length === 0}}">这个孩子还没有积分记录。</view>
+        <view wx:for="{{visiblePointLedger}}" wx:key="id" class="ledger-row" data-id="{{item.id}}" bindtap="openLedgerDetail">
+          <view>
+            <view class="ledger-title">{{item.typeText}}：{{item.title}}</view>
+            <view class="muted">{{item.timeText}} · 余额 {{item.balanceText}}</view>
+          </view>
+          <view class="ledger-side">
+            <view class="ledger-points {{item.isPositive ? 'plus' : 'minus'}}">{{item.deltaText}}</view>
+            <view class="ledger-more">详情</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="tab-content" wx:elif="{{activeTab === 'exchange'}}">
+        <view class="exchange-config">
+          <view wx:if="{{isParent}}">
+            <view class="muted strong">礼品配置</view>
+            <view class="summary-percent">{{giftCards.length}}</view>
+            <view class="muted">已上架 {{activeGiftCount}}，待处理 {{pendingRedemptionCount}}</view>
+          </view>
+          <view wx:else>
+            <view class="muted strong">可用积分</view>
+            <view class="summary-percent">{{selectedChildPoints}}</view>
+          </view>
+          <button wx:if="{{isParent}}" class="primary-button compact" bindtap="openGiftForm">＋ 加礼品</button>
+        </view>
+
+        <view class="section-title">礼品中心</view>
+        <view class="empty-card" wx:if="{{giftCards.length === 0}}">还没有礼品。</view>
+        <view wx:for="{{giftCards}}" wx:key="id" class="gift-card">
+          <image wx:if="{{item.imageUrl}}" class="gift-image" src="{{item.imageUrl}}" mode="aspectFill" />
+          <view wx:else class="gift-image gift-image-placeholder">礼</view>
+          <view class="gift-main">
+            <view class="gift-status">{{item.statusText}}</view>
+            <view class="gift-title">{{item.title}}</view>
+            <view class="muted">{{item.description}}</view>
+            <view class="gift-meta">
+              <view>{{item.pointsCost}} 积分</view>
+              <view>库存 {{item.stock}}</view>
+            </view>
+            <view class="gift-actions">
+              <button wx:if="{{isParent}}" class="secondary-button" data-id="{{item.id}}" bindtap="openGiftForm">编辑</button>
+              <button wx:if="{{isChild}}" class="primary-button small" data-id="{{item.id}}" bindtap="requestGift">申请兑换</button>
+            </view>
+          </view>
+        </view>
+
+        <view class="section-title">兑换记录</view>
+        <view class="empty-card" wx:if="{{childRedemptions.length === 0}}">暂无兑换申请。</view>
+        <view wx:for="{{childRedemptions}}" wx:key="id" class="redemption-row">
+          <view>
+            <view class="agenda-title">{{item.giftTitle}}</view>
+            <view class="muted">{{item.pointsCost}} 积分 · {{item.status}}</view>
+          </view>
+          <view wx:if="{{isParent && item.status === 'pending'}}" class="redemption-actions">
+            <button class="secondary-button mini" data-id="{{item.id}}" data-status="rejected" bindtap="decideRedemption">退回</button>
+            <button class="primary-button mini" data-id="{{item.id}}" data-status="approved" bindtap="decideRedemption">通过</button>
+          </view>
+        </view>
+      </view>
+
+      <view class="tab-content" wx:elif="{{activeTab === 'rules'}}">
+        <view class="section-head">
+          <view>
+            <view class="section-title">规则查看</view>
+            <view class="muted">共同规则 + {{selectedChild.name}} 的独立规则</view>
+          </view>
+          <button wx:if="{{isParent}}" class="primary-button compact" bindtap="openRuleForm">＋ 规则</button>
+        </view>
+        <view wx:for="{{visibleRules}}" wx:key="id" class="rule-card">
+          <view class="rule-top">
+            <view class="rule-scope">{{item.scope === 'common' ? '共同规则' : '独立规则'}}</view>
+            <button wx:if="{{isParent}}" class="text-button" data-id="{{item.id}}" bindtap="openRuleForm">编辑</button>
+          </view>
+          <view class="agenda-title">{{item.title}}</view>
+          <view class="muted">{{item.body}}</view>
+        </view>
+      </view>
+
+      <view class="tab-content" wx:elif="{{activeTab === 'profile'}}">
+        <view class="profile-card" wx:if="{{selectedChild}}">
+          <image class="profile-avatar" src="{{selectedChild.avatarPath}}" mode="aspectFit" />
+          <view class="profile-name">{{selectedChild.name}}</view>
+          <view class="muted">{{selectedChild.grade}} · {{selectedChild.points}} 积分</view>
+          <view class="code-box">孩子码 {{selectedChild.childCode}}</view>
+          <button class="primary-button" bindtap="openProfileEdit">编辑名字和年级</button>
+          <view class="helper-text">头像由家庭统一设定，孩子端不提供修改入口。</view>
+        </view>
+      </view>
+
+      <view class="tab-content" wx:elif="{{activeTab === 'notifications'}}">
+        <button class="ghost-button back-button" bindtap="closeNotifications">返回</button>
+        <view class="notification-card">
+          <view class="section-head compact-head">
+            <view>
+              <view class="section-title">通知提醒</view>
+              <view class="muted">{{notificationCount}} 条待处理</view>
+            </view>
+          </view>
+          <view class="empty-card inner-empty" wx:if="{{notifications.length === 0}}">暂时没有新通知。</view>
+          <view
+            wx:for="{{notifications}}"
+            wx:key="id"
+            class="notification-row {{item.tone}}"
+            data-id="{{item.id}}"
+            data-tab="{{item.actionTab}}"
+            bindtap="selectNotification"
+          >
+            <view class="notification-dot"></view>
+            <view>
+              <view class="agenda-title">{{item.title}}</view>
+              <view class="muted">{{item.body}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-nav">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="nav-item {{activeTab === item.key ? 'active' : ''}}"
+        data-tab="{{item.key}}"
+        bindtap="switchTab"
+      >
+        <view class="nav-icon {{item.iconClass}}"></view>
+        <view>{{item.label}}</view>
+      </view>
+    </view>
+  </block>
+
+  <view wx:if="{{itemFormOpen}}" class="modal-mask">
+    <view class="sheet item-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">{{itemFormKindLabel}}</view>
+          <view class="sheet-title">{{itemFormTitle}} 给 {{selectedChild.name}}</view>
+        </view>
+        <button class="ghost-button" bindtap="closeItemForm">关闭</button>
+      </view>
+
+      <block wx:if="{{itemFormKind === 'courses'}}">
+        <view class="field-label">科目</view>
+        <input class="text-input" data-field="subject" value="{{itemDraft.subject}}" placeholder="例如：数学补课" bindinput="onItemInput" />
+        <view class="field-label">老师/机构</view>
+        <input class="text-input" data-field="teacher" value="{{itemDraft.teacher}}" placeholder="例如：李老师" bindinput="onItemInput" />
+        <view class="form-section schedule-section">
+          <view class="form-section-title">上课安排 / 课次</view>
+          <view class="field-hint">这里设置实际哪天上课。规律课按星期；某一天单独改试听/赠送，在下面做单次调整。</view>
+          <view class="field-label">规律星期</view>
+          <view class="chip-grid weekday-chip-grid">
+            <view
+              wx:for="{{weekdayOptions}}"
+              wx:key="value"
+              class="choice-chip {{item.selected ? 'active' : ''}}"
+              data-value="{{item.value}}"
+              bindtap="toggleItemWeekday"
+            >{{item.label}}</view>
+          </view>
+          <view class="field-label">规律课时间和默认类型</view>
+          <view class="field-hint">每个星期可以单独设置默认时间和默认课时类型，默认都是正式课。</view>
+          <view class="schedule-list">
+            <view wx:for="{{itemWeekdaySchedules}}" wx:for-item="schedule" wx:key="value" class="schedule-row">
+              <view class="schedule-label">{{schedule.label}}</view>
+              <view class="schedule-controls">
+                <picker mode="time" value="{{schedule.time}}" data-weekday="{{schedule.value}}" bindchange="onCourseScheduleTimeChange">
+                  <view class="picker-box schedule-time">{{schedule.time}}</view>
+                </picker>
+                <view class="lesson-type-row">
+                  <view
+                    class="lesson-type-chip {{schedule.lessonType === 'trial' ? 'active' : ''}}"
+                    data-weekday="{{schedule.value}}"
+                    data-type="trial"
+                    bindtap="onCourseScheduleLessonTypeChange"
+                  >试听</view>
+                  <view
+                    class="lesson-type-chip {{schedule.lessonType === 'formal' ? 'active' : ''}}"
+                    data-weekday="{{schedule.value}}"
+                    data-type="formal"
+                    bindtap="onCourseScheduleLessonTypeChange"
+                  >正式</view>
+                  <view
+                    class="lesson-type-chip {{schedule.lessonType === 'bonus' ? 'active' : ''}}"
+                    data-weekday="{{schedule.value}}"
+                    data-type="bonus"
+                    bindtap="onCourseScheduleLessonTypeChange"
+                  >赠送</view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="extra-session-section">
+            <view class="field-label inline-field-label">
+              <text>单次课类型调整</text>
+              <button class="small-outline-button" bindtap="addCourseExtraSession">+ 添加单次</button>
+            </view>
+            <view class="field-hint">把某一天规律课改成试听/赠送，或添加不规律课次。同一天会覆盖规律课，不重复统计。</view>
+            <view wx:if="{{itemExtraSessions.length === 0}}" class="extra-session-empty">暂无单次调整</view>
+            <view wx:for="{{itemExtraSessions}}" wx:for-item="session" wx:key="index" class="extra-session-row">
+              <picker mode="date" value="{{session.date}}" data-index="{{index}}" bindchange="onCourseExtraDateChange">
+                <view class="picker-box extra-session-date">{{session.date}}</view>
+              </picker>
+              <picker mode="time" value="{{session.time}}" data-index="{{index}}" bindchange="onCourseExtraTimeChange">
+                <view class="picker-box extra-session-time">{{session.time}}</view>
+              </picker>
+              <view class="lesson-type-row extra-lesson-type-row">
+                <view
+                  class="lesson-type-chip {{session.lessonType === 'trial' ? 'active' : ''}}"
+                  data-index="{{index}}"
+                  data-type="trial"
+                  bindtap="onCourseExtraLessonTypeChange"
+                >试听</view>
+                <view
+                  class="lesson-type-chip {{session.lessonType === 'formal' ? 'active' : ''}}"
+                  data-index="{{index}}"
+                  data-type="formal"
+                  bindtap="onCourseExtraLessonTypeChange"
+                >正式</view>
+                <view
+                  class="lesson-type-chip {{session.lessonType === 'bonus' ? 'active' : ''}}"
+                  data-index="{{index}}"
+                  data-type="bonus"
+                  bindtap="onCourseExtraLessonTypeChange"
+                >赠送</view>
+              </view>
+              <button class="text-remove-button" data-index="{{index}}" bindtap="removeCourseExtraSession">删除</button>
+            </view>
+          </view>
+        </view>
+        <view class="form-section lifecycle-section">
+          <view class="form-section-title">课程周期</view>
+          <view class="field-hint">这里只管课程从哪天开始生效、到哪天结算结束。</view>
+          <view>
+            <view class="field-label">开始日期</view>
+            <picker mode="date" value="{{itemDraft.startDate}}" data-field="startDate" bindchange="onItemDateChange">
+              <view class="picker-box">{{itemDraft.startDate}}</view>
+            </picker>
+          </view>
+          <view>
+            <view class="field-label">结算日期</view>
+            <picker mode="date" value="{{itemDraft.settlementDate}}" data-field="settlementDate" bindchange="onItemDateChange">
+              <view class="picker-box">{{itemDraft.settlementDate}}</view>
+            </picker>
+          </view>
+        </view>
+        <view class="field-label">单次时长</view>
+        <input class="text-input" type="number" data-field="durationMinutes" value="{{itemDraft.durationMinutes}}" bindinput="onItemInput" />
+      </block>
+
+      <block wx:elif="{{itemFormKind === 'habits'}}">
+        <view class="field-label">习惯名称</view>
+        <input class="text-input" data-field="title" value="{{itemDraft.title}}" placeholder="例如：阅读 30 分钟" bindinput="onItemInput" />
+        <view class="field-label">习惯类型</view>
+        <view class="chip-grid habit-type-grid">
+          <view class="choice-chip {{itemDraft.frequency === 'daily' ? 'active' : ''}}" data-frequency="daily" bindtap="setHabitFrequency">每天</view>
+          <view class="choice-chip {{itemDraft.frequency === 'weekly' ? 'active' : ''}}" data-frequency="weekly" bindtap="setHabitFrequency">周期</view>
+          <view class="choice-chip {{itemDraft.frequency === 'range' ? 'active' : ''}}" data-frequency="range" bindtap="setHabitFrequency">区间</view>
+        </view>
+        <view wx:if="{{itemDraft.frequency === 'weekly'}}">
+          <view class="field-label">重复星期</view>
+          <view class="chip-grid weekday-chip-grid">
+            <view
+              wx:for="{{weekdayOptions}}"
+              wx:key="value"
+              class="choice-chip {{item.selected ? 'active' : ''}}"
+              data-value="{{item.value}}"
+              bindtap="toggleItemWeekday"
+            >{{item.label}}</view>
+          </view>
+        </view>
+        <view wx:if="{{itemDraft.frequency === 'range'}}" class="form-stack">
+          <view>
+            <view class="field-label">开始日期</view>
+            <picker mode="date" value="{{itemDraft.startDate}}" data-field="startDate" bindchange="onItemDateChange">
+              <view class="picker-box">{{itemDraft.startDate}}</view>
+            </picker>
+          </view>
+          <view>
+            <view class="field-label">结束日期</view>
+            <picker mode="date" value="{{itemDraft.endDate}}" data-field="endDate" bindchange="onItemDateChange">
+              <view class="picker-box">{{itemDraft.endDate}}</view>
+            </picker>
+          </view>
+        </view>
+        <view class="field-label">提醒时间</view>
+        <picker mode="time" value="{{itemDraft.time}}" bindchange="onItemTimeChange">
+          <view class="picker-box">{{itemDraft.time}}</view>
+        </picker>
+      </block>
+
+      <block wx:elif="{{itemFormKind === 'milestones'}}">
+        <view class="field-label">节点名称</view>
+        <input class="text-input" data-field="title" value="{{itemDraft.title}}" placeholder="例如：期末考试" bindinput="onItemInput" />
+        <view class="field-label">倒计时日期</view>
+        <picker mode="date" value="{{itemDraft.date}}" data-field="date" bindchange="onItemDateChange">
+          <view class="picker-box">{{itemDraft.date}}</view>
+        </picker>
+      </block>
+
+      <block wx:else>
+        <view class="field-label">任务名称</view>
+        <input class="text-input" data-field="title" value="{{itemDraft.title}}" placeholder="例如：练习口算 20 题" bindinput="onItemInput" />
+        <view class="form-stack">
+          <view>
+            <view class="field-label">日期</view>
+            <picker mode="date" value="{{itemDraft.dueDate}}" data-field="dueDate" bindchange="onItemDateChange">
+              <view class="picker-box">{{itemDraft.dueDate}}</view>
+            </picker>
+          </view>
+          <view>
+            <view class="field-label">开始时间</view>
+            <picker mode="time" value="{{itemDraft.time}}" bindchange="onItemTimeChange">
+              <view class="picker-box">{{itemDraft.time}}</view>
+            </picker>
+          </view>
+        </view>
+      </block>
+
+      <view wx:if="{{itemFormKind !== 'milestones'}}" class="form-section">
+        <view class="field-label">专注方式</view>
+        <view class="role-switch inner">
+          <view class="role-option {{itemDraft.focusMode === 'pomodoro' ? 'active' : ''}}" data-mode="pomodoro" bindtap="setFocusMode">番茄钟</view>
+          <view class="role-option {{itemDraft.focusMode === 'custom' ? 'active' : ''}}" data-mode="custom" bindtap="setFocusMode">自定义时间</view>
+        </view>
+        <view wx:if="{{itemDraft.focusMode === 'pomodoro'}}" class="form-stack">
+          <view>
+            <view class="field-label">{{itemFormKind === 'tasks' ? '任务时长' : '专注分钟'}}</view>
+            <input class="text-input" type="number" data-field="focusMinutes" value="{{itemDraft.focusMinutes}}" bindinput="onItemInput" />
+          </view>
+          <view>
+            <view class="field-label">休息分钟</view>
+            <input class="text-input" type="number" data-field="breakMinutes" value="{{itemDraft.breakMinutes}}" bindinput="onItemInput" />
+          </view>
+        </view>
+        <view wx:else>
+          <view class="field-label">{{itemFormKind === 'tasks' ? '任务时长' : '自定义分钟'}}</view>
+          <input class="text-input" type="number" data-field="focusMinutes" value="{{itemDraft.focusMinutes}}" bindinput="onItemInput" />
+          <view class="helper-text form-note">按这个时长倒计时，不安排休息段。</view>
+        </view>
+        <view class="form-stack">
+          <view>
+            <view class="field-label">成功分</view>
+            <input class="text-input" type="number" data-field="successPoints" value="{{itemDraft.successPoints}}" bindinput="onItemInput" />
+          </view>
+          <view>
+            <view class="field-label">失败分</view>
+            <input class="text-input" type="number" data-field="failurePoints" value="{{itemDraft.failurePoints}}" bindinput="onItemInput" />
+          </view>
+        </view>
+        <view class="makeup-row">
+          <view>
+            <view class="field-label">允许补卡</view>
+            <view class="helper-text form-note">关闭后，过期项目只能查看，不能补打卡。</view>
+          </view>
+          <switch checked="{{itemDraft.allowMakeup}}" color="#f5a316" data-field="allowMakeup" bindchange="onItemSwitch" />
+        </view>
+        <view wx:if="{{itemDraft.allowMakeup}}">
+          <view class="field-label">补卡分</view>
+          <input class="text-input" type="number" data-field="makeupPoints" value="{{itemDraft.makeupPoints}}" bindinput="onItemInput" />
+          <view class="field-label">补卡后显示</view>
+          <input class="text-input" data-field="makeupRule" value="{{itemDraft.makeupRule}}" bindinput="onItemInput" />
+        </view>
+        <view class="field-label">完成后显示</view>
+        <input class="text-input" data-field="successRule" value="{{itemDraft.successRule}}" bindinput="onItemInput" />
+        <view class="field-label">未完成处理</view>
+        <input class="text-input" data-field="failureRule" value="{{itemDraft.failureRule}}" bindinput="onItemInput" />
+      </view>
+
+      <view class="sheet-actions">
+        <button wx:if="{{editingItemId}}" class="danger-button" bindtap="deleteEditingItem">删除</button>
+        <button class="primary-button" bindtap="saveItem">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{courseSessionFormOpen}}" class="modal-mask">
+    <view class="sheet course-session-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">当日课次</view>
+          <view class="sheet-title">当日课次类型</view>
+        </view>
+        <button class="ghost-button" bindtap="closeCourseSessionForm">关闭</button>
+      </view>
+      <view class="course-session-summary">
+        <view>
+          <view class="course-session-title">{{courseSessionDraft.title}}</view>
+          <view class="muted">{{courseSessionDraft.teacher}} · {{courseSessionDraft.durationText}}</view>
+        </view>
+        <view class="course-session-badge">{{courseSessionDraft.sourceText}}</view>
+      </view>
+      <view class="form-stack">
+        <view>
+          <view class="field-label">日期</view>
+          <view class="picker-box readonly-box">{{courseSessionDraft.date}}</view>
+        </view>
+        <view>
+          <view class="field-label">时间</view>
+          <view class="picker-box readonly-box">{{courseSessionDraft.time}}</view>
+        </view>
+      </view>
+      <view class="field-label">这一天的课程类型</view>
+      <view class="lesson-type-row course-session-type-row">
+        <view
+          class="lesson-type-chip large {{courseSessionDraft.lessonType === 'trial' ? 'active' : ''}}"
+          data-type="trial"
+          bindtap="setCourseSessionLessonType"
+        >试听</view>
+        <view
+          class="lesson-type-chip large {{courseSessionDraft.lessonType === 'formal' ? 'active' : ''}}"
+          data-type="formal"
+          bindtap="setCourseSessionLessonType"
+        >正式</view>
+        <view
+          class="lesson-type-chip large {{courseSessionDraft.lessonType === 'bonus' ? 'active' : ''}}"
+          data-type="bonus"
+          bindtap="setCourseSessionLessonType"
+        >赠送</view>
+      </view>
+      <view class="helper-text form-note">保存后只影响这一天这一节课；同一天会覆盖规律课默认类型。</view>
+      <button class="primary-button course-session-save" bindtap="saveCourseSessionType">保存当日类型</button>
+    </view>
+  </view>
+
+  <view wx:if="{{giftFormOpen}}" class="modal-mask">
+    <view class="sheet gift-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">礼品管理</view>
+          <view class="sheet-title">{{editingGiftId ? '编辑礼品' : '添加礼品'}}</view>
+        </view>
+        <button class="ghost-button" bindtap="closeGiftForm">关闭</button>
+      </view>
+      <view class="field-label">礼品名称</view>
+      <input class="text-input" data-field="title" value="{{giftDraft.title}}" bindinput="onGiftInput" />
+      <view class="field-label">礼品照片</view>
+      <view class="image-picker">
+        <image wx:if="{{giftDraft.imageUrl}}" class="gift-preview" src="{{giftDraft.imageUrl}}" mode="aspectFill" />
+        <button class="primary-button image-action" bindtap="chooseGiftImage">选择照片</button>
+        <view class="muted form-note">从手机或电脑里选图，不需要填写网址。</view>
+      </view>
+      <view class="field-label">说明</view>
+      <input class="text-input" data-field="description" value="{{giftDraft.description}}" bindinput="onGiftInput" />
+      <view class="form-stack">
+        <view>
+          <view class="field-label">所需积分</view>
+          <input class="text-input" type="number" data-field="pointsCost" value="{{giftDraft.pointsCost}}" bindinput="onGiftInput" />
+        </view>
+        <view>
+          <view class="field-label">库存</view>
+          <input class="text-input" type="number" data-field="stock" value="{{giftDraft.stock}}" bindinput="onGiftInput" />
+        </view>
+      </view>
+      <label class="switch-line">
+        <switch checked="{{giftDraft.active}}" color="#f5a316" bindchange="onGiftActiveChange" /> 上架，孩子可以申请兑换
+      </label>
+      <button class="primary-button" bindtap="saveGift">保存礼品</button>
+    </view>
+  </view>
+
+  <view wx:if="{{ruleFormOpen}}" class="modal-mask">
+    <view class="sheet rule-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">规则编辑</view>
+          <view class="sheet-title">{{editingRuleId ? '编辑规则' : '新增规则'}}</view>
+        </view>
+        <button class="ghost-button" bindtap="closeRuleForm">关闭</button>
+      </view>
+      <view class="role-switch inner">
+        <view class="role-option {{ruleScope === 'common' ? 'active' : ''}}" data-scope="common" bindtap="setRuleScope">共同规则</view>
+        <view class="role-option {{ruleScope === 'child' ? 'active' : ''}}" data-scope="child" bindtap="setRuleScope">{{selectedChild.name}} 规则</view>
+      </view>
+      <view class="field-label">标题</view>
+      <input class="text-input" data-field="title" value="{{ruleDraft.title}}" bindinput="onRuleInput" />
+      <view class="field-label">内容</view>
+      <textarea class="textarea-input" data-field="body" value="{{ruleDraft.body}}" bindinput="onRuleInput" />
+      <view class="sheet-actions">
+        <button wx:if="{{editingRuleId}}" class="danger-button" bindtap="deleteEditingRule">删除</button>
+        <button class="primary-button" bindtap="saveRule">保存规则</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{profileEditing}}" class="modal-mask">
+    <view class="sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">个人资料</view>
+          <view class="sheet-title">编辑 {{selectedChild.name}}</view>
+        </view>
+        <button class="ghost-button" bindtap="closeProfileEdit">关闭</button>
+      </view>
+      <view class="field-label">名字</view>
+      <input class="text-input" data-field="name" value="{{profileDraft.name}}" bindinput="onProfileInput" />
+      <view class="field-label">年级</view>
+      <view class="chip-grid grade-chip-grid">
+        <view
+          wx:for="{{gradeOptions}}"
+          wx:key="*this"
+          class="choice-chip {{profileDraft.grade === item ? 'active' : ''}}"
+          data-grade="{{item}}"
+          bindtap="selectProfileGrade"
+        >{{item}}</view>
+      </view>
+      <button class="primary-button profile-save-button" bindtap="saveProfile">保存资料</button>
+    </view>
+  </view>
+
+  <view wx:if="{{ledgerDetailOpen}}" class="modal-mask">
+    <view class="sheet ledger-detail-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">积分流水</view>
+          <view class="sheet-title">积分详情</view>
+        </view>
+        <button class="ghost-button" bindtap="closeLedgerDetail">关闭</button>
+      </view>
+      <view class="ledger-detail-summary">
+        <view>
+          <view class="muted strong">{{ledgerDetail.title}}</view>
+          <view class="ledger-detail-type">{{ledgerDetail.typeText}}</view>
+        </view>
+        <view class="ledger-detail-delta {{ledgerDetail.isPositive ? 'plus' : 'minus'}}">{{ledgerDetail.deltaText}}</view>
+      </view>
+      <view class="ledger-detail-list">
+        <view wx:for="{{ledgerDetail.rows}}" wx:key="label" class="ledger-detail-row">
+          <view class="muted">{{item.label}}</view>
+          <view class="ledger-detail-value">{{item.value}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{timerOpen}}" class="timer-layer">
+    <image class="timer-bg" src="{{selectedChild.patternPath}}" mode="aspectFit" />
+    <button class="timer-close" style="top: {{customNavPadding}}px;" bindtap="closeTimer">×</button>
+    <view class="timer-content">
+      <view class="eyebrow light">{{timerStatusLabel}}</view>
+      <view class="timer-circle {{timerStatus === 'running' ? 'breathing' : ''}}" style="background: conic-gradient(#fff8e9 0deg {{timerProgressDeg}}deg, rgba(255, 255, 255, 0.24) {{timerProgressDeg}}deg 360deg);">
+        <view class="timer-circle-inner">
+          <view class="timer-display">{{timerDisplay}}</view>
+          <view class="timer-meta">{{timerItemTitle}}</view>
+        </view>
+      </view>
+      <view class="timer-title">{{timerHint}}</view>
+      <view class="timer-actions">
+        <button class="primary-button" bindtap="startTimer">开始专注</button>
+        <button class="secondary-dark" bindtap="resetTimer">重置</button>
+      </view>
+    </view>
+  </view>
+</view>

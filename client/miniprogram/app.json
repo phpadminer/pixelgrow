@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/family-plan/index",
     "pages/welcome/index",
     "pages/home/index",
     "pages/world/index",
@@ -12,11 +13,11 @@
     "pages/parent/index"
   ],
   "window": {
-    "navigationBarTitleText": "PixelGrow",
-    "navigationBarBackgroundColor": "#1a1a2e",
-    "navigationBarTextStyle": "white",
-    "backgroundColor": "#16213e",
-    "backgroundTextStyle": "light"
+    "navigationBarTitleText": "伴学点滴",
+    "navigationBarBackgroundColor": "#fff7df",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fff8e8",
+    "backgroundTextStyle": "dark"
   },
   "tabBar": {
     "color": "#8a8a8a",

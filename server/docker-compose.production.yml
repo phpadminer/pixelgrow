@@ -1,0 +1,40 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pixelgrow-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: pixelgrow
+      MYSQL_USER: pixelgrow
+      MYSQL_PASSWORD: ${PIXELGROW_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${PIXELGROW_DB_ROOT_PASSWORD}
+    volumes:
+      - pixelgrow_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build:
+      context: .
+    container_name: pixelgrow-api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: mysql://pixelgrow:${PIXELGROW_DB_PASSWORD}@mysql:3306/pixelgrow
+      JWT_SECRET: ${JWT_SECRET}
+      WX_APP_ID: ${WX_APP_ID}
+      WX_APP_SECRET: ${WX_APP_SECRET}
+      FAMILY_PLAN_TOKEN_SECRET: ${FAMILY_PLAN_TOKEN_SECRET}
+      FAMILY_PLAN_SEED_MODE: starter
+    ports:
+      - "127.0.0.1:13001:3001"
+
+volumes:
+  pixelgrow_mysql_data:

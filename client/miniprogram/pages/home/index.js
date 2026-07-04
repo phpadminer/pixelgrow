@@ -19,6 +19,22 @@ function getLocalCharacter() {
   }
 }
 
+function normalizeTask(task) {
+  const statusMeta = {
+    COMPLETED: { statusClass: 'status-completed', statusText: '已完成' },
+    IN_PROGRESS: { statusClass: 'status-progress', statusText: '进行中' },
+    PENDING: { statusClass: 'status-pending', statusText: '待完成' },
+  }
+  const meta = statusMeta[task.status] || statusMeta.PENDING
+
+  return {
+    ...task,
+    rewardExp: task.rewardExp ?? task.rewards?.exp ?? 0,
+    rewardCoins: task.rewardCoins ?? task.rewards?.coins ?? 0,
+    ...meta,
+  }
+}
+
 Page({
   data: {
     character: {
@@ -40,6 +56,10 @@ Page({
         title: '领取今天的成长任务',
         status: 'PENDING',
         rewards: { exp: 10, coins: 8 },
+        rewardExp: 10,
+        rewardCoins: 8,
+        statusClass: 'status-pending',
+        statusText: '待完成',
       },
     ],
     expPercent: 20,
@@ -77,7 +97,7 @@ Page({
         method: 'GET',
       })
 
-      const todayTasks = response.todayTasks || []
+      const todayTasks = (response.todayTasks || []).map(normalizeTask)
       const completedCount = todayTasks.filter(
         (task) => task.status === 'COMPLETED',
       ).length

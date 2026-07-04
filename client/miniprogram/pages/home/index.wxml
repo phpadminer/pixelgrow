@@ -45,10 +45,10 @@
       <view class="task-icon">{{item.icon}}</view>
       <view class="task-info">
         <text class="task-title">{{item.title}}</text>
-        <text class="task-reward">+{{item.rewards.exp}} EXP · +{{item.rewards.coins}} Coins</text>
-      </view>
-      <view class="task-status {{item.status === 'COMPLETED' ? 'status-completed' : item.status === 'IN_PROGRESS' ? 'status-progress' : 'status-pending'}}">
-        {{item.status === 'COMPLETED' ? '已完成' : item.status === 'IN_PROGRESS' ? '进行中' : '待完成'}}
+      <text class="task-reward">+{{item.rewardExp}} EXP · +{{item.rewardCoins}} Coins</text>
+    </view>
+      <view class="task-status {{item.statusClass}}">
+        {{item.statusText}}
       </view>
     </view>
   </view>

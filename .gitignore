@@ -30,6 +30,7 @@ npm-debug.log*
 coverage/
 
 # WeChat Mini Program
+project.private.config.json
 client/miniprogram/miniprogram_npm/
 client/miniprogram/node_modules/
 

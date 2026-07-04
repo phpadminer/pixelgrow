@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "伴学点滴",
+  "navigationBarBackgroundColor": "#fff7df",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#fff8e7",
+  "backgroundColorTop": "#fff8e7",
+  "backgroundColorBottom": "#fff7e3"
+}

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="爸爸猴子头像">
+  <defs>
+    <radialGradient id="bg" cx="48%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#fff4dd"/>
+      <stop offset="1" stop-color="#ffe0bd"/>
+    </radialGradient>
+    <radialGradient id="fur" cx="42%" cy="28%" r="78%">
+      <stop offset="0" stop-color="#b96a44"/>
+      <stop offset="0.72" stop-color="#7a3f31"/>
+      <stop offset="1" stop-color="#4e2730"/>
+    </radialGradient>
+    <radialGradient id="face" cx="48%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffe0bd"/>
+      <stop offset="0.7" stop-color="#ffc091"/>
+      <stop offset="1" stop-color="#f59a79"/>
+    </radialGradient>
+    <linearGradient id="shirt" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffd95b"/>
+      <stop offset="1" stop-color="#4f82b5"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#6d3a2f" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+  <circle cx="90" cy="90" r="82" fill="url(#bg)"/>
+  <ellipse cx="90" cy="150" rx="48" ry="10" fill="#7b4b42" opacity="0.14"/>
+  <g filter="url(#softShadow)">
+    <circle cx="38" cy="84" r="28" fill="#f5a47f" stroke="#823f36" stroke-width="5"/>
+    <circle cx="142" cy="84" r="28" fill="#f5a47f" stroke="#823f36" stroke-width="5"/>
+    <circle cx="38" cy="84" r="16" fill="#ffbd96" opacity="0.9"/>
+    <circle cx="142" cy="84" r="16" fill="#ffbd96" opacity="0.9"/>
+    <path d="M46 74c0-32 18-52 47-52 25 0 43 16 43 44 13 9 17 22 11 37-8 23-29 37-57 37s-49-14-57-37c-5-14-1-23 13-29Z" fill="url(#fur)" stroke="#5b2c32" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M55 80c-1-30 17-49 42-49 18 0 31 9 38 26-16-5-30-3-41 8-7 7-16 10-39 15Z" fill="#a05239"/>
+    <path d="M48 90c9-28 30-45 55-39 25 6 38 28 31 56-6 26-29 41-55 35-25-6-39-27-31-52Z" fill="url(#face)" stroke="#743536" stroke-width="4"/>
+    <path d="M59 137c8 16 22 25 41 25 17 0 29-8 36-23-10 4-23 6-38 4-15-1-28-4-39-6Z" fill="url(#shirt)" opacity="0.9"/>
+  </g>
+  <path d="M67 95c8-9 20-8 27 1" fill="none" stroke="#5b2630" stroke-width="5" stroke-linecap="round"/>
+  <path d="M108 90c7-12 17-14 25-5" fill="none" stroke="#5b2630" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="100" cy="105" rx="16" ry="10" fill="#f58f72" opacity="0.9"/>
+  <path d="M84 124c15 9 34 4 46-12" fill="none" stroke="#8d3b36" stroke-width="3" stroke-linecap="round"/>
+  <line x1="104" y1="112" x2="101" y2="125" stroke="#9e4a3c" stroke-width="2.5" stroke-linecap="round"/>
+  <ellipse cx="63" cy="116" rx="11" ry="8" fill="#ff8f84" opacity="0.65"/>
+  <ellipse cx="132" cy="112" rx="11" ry="8" fill="#ff8f84" opacity="0.65"/>
+  <path d="M78 30c17-19 38-18 60-1-25-1-41 3-54 15" fill="#ffd391" opacity="0.9"/>
+</svg>

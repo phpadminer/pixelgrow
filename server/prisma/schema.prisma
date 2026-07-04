@@ -139,6 +139,193 @@ model Task {
   updatedAt   DateTime  @updatedAt
 }
 
+// ============ 家庭计划 H5 ============
+
+model FamilyPlanChild {
+  id        String   @id @default(cuid())
+  familyKey String
+  childKey  String
+  childCode String?
+  pinCode   String?
+  name      String
+  avatar    String
+  grade     String
+  ageBand   String?
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([familyKey, childKey])
+  @@index([familyKey])
+  @@index([familyKey, childCode])
+}
+
+model FamilyPlanCourse {
+  id              String   @id @default(cuid())
+  familyKey       String
+  childKey        String
+  subject         String
+  teacher         String
+  startDate       String
+  settlementDate  String
+  weekday         Int
+  weekdays        Json?
+  schedules       Json?
+  extraSessions   Json?
+  time            String
+  durationMinutes Int
+  focusMode       String?
+  focusMinutes    Int?
+  breakMinutes    Int?
+  successPoints   Int      @default(3)
+  failurePoints   Int      @default(0)
+  allowMakeup     Boolean  @default(true)
+  makeupPoints    Int      @default(1)
+  successRule     String?
+  makeupRule      String?
+  failureRule     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([familyKey, childKey])
+}
+
+model FamilyPlanHabit {
+  id        String   @id @default(cuid())
+  familyKey String
+  childKey  String
+  title     String
+  frequency String
+  weekdays  Json?
+  startDate String?
+  endDate   String?
+  time      String?
+  meta      String?
+  focusMode String?
+  focusMinutes Int?
+  breakMinutes Int?
+  successPoints Int @default(2)
+  failurePoints Int @default(0)
+  allowMakeup Boolean @default(true)
+  makeupPoints Int @default(1)
+  successRule String?
+  makeupRule String?
+  failureRule String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyKey, childKey])
+}
+
+model FamilyPlanTask {
+  id        String   @id @default(cuid())
+  familyKey String
+  childKey  String
+  title     String
+  dueDate   String
+  time      String?
+  meta      String?
+  focusMode String?
+  focusMinutes Int?
+  breakMinutes Int?
+  successPoints Int @default(2)
+  failurePoints Int @default(0)
+  allowMakeup Boolean @default(true)
+  makeupPoints Int @default(1)
+  successRule String?
+  makeupRule String?
+  failureRule String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyKey, childKey, dueDate])
+}
+
+model FamilyPlanMilestone {
+  id        String   @id @default(cuid())
+  familyKey String
+  title     String
+  date      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyKey, date])
+}
+
+model FamilyPlanCompletion {
+  id        String   @id @default(cuid())
+  familyKey String
+  itemKey   String
+  completed Boolean  @default(false)
+  status    String   @default("confirmed")
+  isMakeup  Boolean  @default(false)
+  pointsDelta Int    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([familyKey, itemKey])
+  @@index([familyKey])
+}
+
+model FamilyPlanRule {
+  id        String   @id @default(cuid())
+  familyKey String
+  childKey  String?
+  title     String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyKey, childKey])
+}
+
+model FamilyPlanGift {
+  id          String   @id @default(cuid())
+  familyKey   String
+  title       String
+  description String?
+  imageUrl    String   @db.LongText
+  pointsCost  Int
+  stock       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([familyKey, active])
+}
+
+model FamilyPlanRedemption {
+  id         String   @id @default(cuid())
+  familyKey  String
+  childKey   String
+  giftId     String
+  giftTitle  String
+  pointsCost Int
+  status     String   @default("pending")
+  note       String?
+  decidedAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([familyKey, childKey, status])
+  @@index([familyKey, giftId])
+}
+
+model FamilyPlanPointLedger {
+  id          String   @id @default(cuid())
+  familyKey   String
+  childKey    String
+  sourceType  String
+  sourceId    String?
+  pointsDelta Int
+  balanceAfter Int
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([familyKey, childKey, createdAt])
+  @@index([familyKey, sourceType, sourceId])
+}
+
 enum TaskType {
   STUDY
   LIFE

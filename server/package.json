@@ -8,7 +8,8 @@
     "start": "node dist/main",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:reset-family-plan": "node scripts/reset-family-plan-data.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="小羊头像">
+  <defs>
+    <radialGradient id="halo" cx="50%" cy="38%" r="72%">
+      <stop offset="0" stop-color="#fffdf1"/>
+      <stop offset="0.68" stop-color="#fff1c9"/>
+      <stop offset="1" stop-color="#ffd57f"/>
+    </radialGradient>
+    <radialGradient id="face" cx="48%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#fff3df"/>
+      <stop offset="0.74" stop-color="#ffd8bd"/>
+      <stop offset="1" stop-color="#f0b28f"/>
+    </radialGradient>
+    <linearGradient id="wool" x1="40" x2="136" y1="38" y2="129">
+      <stop offset="0" stop-color="#fffef5"/>
+      <stop offset="0.66" stop-color="#fff1d2"/>
+      <stop offset="1" stop-color="#ead2ae"/>
+    </linearGradient>
+    <linearGradient id="horn" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#e3b57e"/>
+      <stop offset="1" stop-color="#b97846"/>
+    </linearGradient>
+    <filter id="softShadow" x="-22%" y="-22%" width="144%" height="148%">
+      <feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#bb8b5f" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <circle cx="90" cy="90" r="78" fill="url(#halo)" opacity="0.82"/>
+  <ellipse cx="90" cy="150" rx="42" ry="10" fill="#b48762" opacity="0.12"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M55 74c-8-13-3-25 10-30 10-4 20 2 22 11-13 3-24 9-32 19Z" fill="url(#horn)" opacity="0.88"/>
+    <path d="M125 74c8-13 3-25-10-30-10-4-20 2-22 11 13 3 24 9 32 19Z" fill="url(#horn)" opacity="0.88"/>
+
+    <path d="M45 91c-19-2-29 10-25 24 4 13 25 10 32-4" fill="#ffd7bf" stroke="#d6a48d" stroke-width="3" stroke-linecap="round"/>
+    <path d="M135 91c19-2 29 10 25 24-4 13-25 10-32-4" fill="#ffd7bf" stroke="#d6a48d" stroke-width="3" stroke-linecap="round"/>
+
+    <path d="M43 92c0-33 20-55 47-55s47 22 47 55c0 34-21 53-47 53s-47-19-47-53Z" fill="url(#wool)" stroke="#d9bd96" stroke-width="3"/>
+    <circle cx="56" cy="76" r="17" fill="url(#wool)"/>
+    <circle cx="75" cy="61" r="19" fill="url(#wool)"/>
+    <circle cx="96" cy="58" r="20" fill="url(#wool)"/>
+    <circle cx="118" cy="75" r="17" fill="url(#wool)"/>
+    <circle cx="61" cy="116" r="18" fill="url(#wool)"/>
+    <circle cx="119" cy="116" r="18" fill="url(#wool)"/>
+
+    <ellipse cx="90" cy="103" rx="35" ry="38" fill="url(#face)"/>
+  </g>
+
+  <ellipse cx="77" cy="101" rx="5.8" ry="8.5" fill="#49383b"/>
+  <ellipse cx="103" cy="101" rx="5.8" ry="8.5" fill="#49383b"/>
+  <circle cx="75" cy="97" r="2.5" fill="#fff"/>
+  <circle cx="101" cy="97" r="2.5" fill="#fff"/>
+  <ellipse cx="65" cy="116" rx="8.5" ry="6" fill="#ff9f9f" opacity="0.52"/>
+  <ellipse cx="115" cy="116" rx="8.5" ry="6" fill="#ff9f9f" opacity="0.52"/>
+  <path d="M85 116c3 4 7 4 10 0" fill="none" stroke="#815547" stroke-width="3" stroke-linecap="round"/>
+  <path d="M90 110v7" stroke="#815547" stroke-width="3" stroke-linecap="round"/>
+  <path d="M67 83c6-7 15-10 24-8" fill="none" stroke="#f7dfb9" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+</svg>
