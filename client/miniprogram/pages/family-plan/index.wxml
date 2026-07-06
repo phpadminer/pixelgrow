@@ -84,7 +84,7 @@
           <view class="family-setup-main">
             <view class="muted strong">微信登录已完成</view>
             <view class="agenda-title">还没有家庭</view>
-            <view class="muted">微信登录只用于绑定账号，不需要手机号、头像或昵称授权。下一步创建家庭，或输入邀请码加入别人家庭。</view>
+            <view class="muted">微信登录只用于绑定账号，不需要手机号，头像昵称可自愿设置。下一步创建家庭，或输入邀请码加入别人家庭。</view>
             <view wx:if="{{pendingGuestSavePlan}}" class="muted">创建或加入家庭后，会自动保存游客数据。</view>
           </view>
           <view class="family-actions inline">
@@ -464,6 +464,20 @@
       <view class="wechat-login-box">
         <view class="field-label">家庭模式</view>
         <view class="field-hint">微信登录后创建或加入家庭，课程、积分、礼品都会持久保存。</view>
+        <view class="account-profile-box">
+          <button class="account-avatar-button" open-type="chooseAvatar" bindchooseavatar="onAccountAvatarChoose">
+            <image wx:if="{{accountAvatarUrl}}" class="account-avatar-image" src="{{accountAvatarUrl}}" mode="aspectFill" />
+            <view wx:else class="account-avatar-placeholder">头像</view>
+          </button>
+          <view class="account-profile-fields">
+            <view class="field-label compact-label">账号资料</view>
+            <input class="text-input account-nickname-input" type="nickname" placeholder="微信昵称" value="{{accountNickname}}" bindinput="onAccountNicknameInput" />
+            <view class="account-role-row">
+              <view class="account-role-label">身份</view>
+              <view class="account-role-pill">{{accountRoleLabel}}</view>
+            </view>
+          </view>
+        </view>
         <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="loginWithWechat">微信登录</button>
       </view>
 

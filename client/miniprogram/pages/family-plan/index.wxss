@@ -2145,6 +2145,81 @@ picker {
   margin-top: 10rpx;
 }
 
+.account-profile-box {
+  display: grid;
+  grid-template-columns: 112rpx 1fr;
+  gap: 22rpx;
+  align-items: center;
+  margin: 24rpx 0 28rpx;
+  padding: 22rpx;
+  border: 2rpx solid rgba(245, 163, 22, 0.18);
+  border-radius: 20rpx;
+  background: #fffaf0;
+}
+
+.account-avatar-button {
+  width: 112rpx;
+  height: 112rpx;
+  padding: 0;
+  border-radius: 22rpx;
+  overflow: hidden;
+  background: #fff4cf;
+  color: #d98900;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 112rpx;
+}
+
+.account-avatar-button::after {
+  border: 0;
+}
+
+.account-avatar-image,
+.account-avatar-placeholder {
+  width: 112rpx;
+  height: 112rpx;
+}
+
+.account-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.account-profile-fields {
+  min-width: 0;
+}
+
+.compact-label {
+  margin-top: 0;
+}
+
+.account-nickname-input {
+  min-height: 72rpx;
+  font-size: 26rpx;
+}
+
+.account-role-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-top: 14rpx;
+  color: #6f7f84;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.account-role-pill {
+  min-width: 88rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(245, 163, 22, 0.14);
+  color: #c57d00;
+  text-align: center;
+  font-weight: 900;
+}
+
 .family-list {
   display: flex;
   flex-direction: column;

@@ -656,6 +656,9 @@ Page({
     code: '123456',
     childCode: 'GEGE01',
     pinCode: '2580',
+    accountNickname: '',
+    accountAvatarUrl: '',
+    accountRoleLabel: '家长',
     session: null,
     account: null,
     families: [],
@@ -814,6 +817,14 @@ Page({
     this.setData({ [field]: event.detail.value })
   },
 
+  onAccountNicknameInput(event) {
+    this.setData({ accountNickname: event.detail.value })
+  },
+
+  onAccountAvatarChoose(event) {
+    this.setData({ accountAvatarUrl: event.detail.avatarUrl })
+  },
+
   openLoginForm() {
     this.setData({ loginFormOpen: true })
   },
@@ -865,7 +876,11 @@ Page({
           fail: reject,
         })
       })
-      const session = await api.loginWechat({ code })
+      const session = await api.loginWechat({
+        code,
+        nickname: String(this.data.accountNickname || '').trim(),
+        avatarUrl: this.data.accountAvatarUrl || '',
+      })
       this.applySession(session, {
         selectedChildId: session.childId || '',
       })

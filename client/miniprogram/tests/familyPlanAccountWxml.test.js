@@ -15,8 +15,8 @@ assert(
 )
 
 assert(
-  wxml.includes('不需要手机号、头像或昵称授权'),
-  'post-login family setup copy should explain WeChat login does not require profile or phone authorization'
+  wxml.includes('不需要手机号，头像昵称可自愿设置'),
+  'post-login family setup copy should explain WeChat login does not require phone authorization'
 )
 
 assert(
@@ -27,6 +27,16 @@ assert(
 assert(
   wxml.includes('家庭模式'),
   'login sheet should clearly label persistent family mode'
+)
+
+assert(
+  wxml.includes('open-type="chooseAvatar"') && wxml.includes('type="nickname"') && wxml.includes('账号资料'),
+  'login sheet should let users set account avatar and nickname'
+)
+
+assert(
+  wxml.includes('身份') && wxml.includes('家长'),
+  'login sheet should show the current WeChat account role'
 )
 
 assert(
