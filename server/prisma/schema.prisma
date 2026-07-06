@@ -141,6 +141,73 @@ model Task {
 
 // ============ 家庭计划 H5 ============
 
+model FamilyPlanAccount {
+  id           String   @id @default(cuid())
+  wechatOpenId String   @unique
+  legacyUserId String?  @unique
+  unionId      String?
+  nickname     String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships  FamilyPlanFamilyMember[]
+  ownedFamilies FamilyPlanFamily[]       @relation("FamilyPlanFamilyOwner")
+  createdInvites FamilyPlanInvite[]      @relation("FamilyPlanInviteCreator")
+}
+
+model FamilyPlanFamily {
+  id             String   @id @default(cuid())
+  familyKey      String   @unique
+  name           String
+  ownerAccountId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  ownerAccount FamilyPlanAccount?       @relation("FamilyPlanFamilyOwner", fields: [ownerAccountId], references: [id])
+  members      FamilyPlanFamilyMember[]
+  invites      FamilyPlanInvite[]
+
+  @@index([ownerAccountId])
+}
+
+model FamilyPlanFamilyMember {
+  id        String   @id @default(cuid())
+  familyId  String
+  accountId String
+  role      String   @default("parent")
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family  FamilyPlanFamily  @relation(fields: [familyId], references: [id])
+  account FamilyPlanAccount @relation(fields: [accountId], references: [id])
+
+  @@unique([familyId, accountId])
+  @@index([accountId, status])
+  @@index([familyId, role])
+}
+
+model FamilyPlanInvite {
+  id                 String    @id @default(cuid())
+  familyId           String
+  inviteCode         String    @unique
+  role               String    @default("parent")
+  status             String    @default("active")
+  maxUses            Int?
+  usedCount          Int       @default(0)
+  expiresAt          DateTime?
+  createdByAccountId String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  family    FamilyPlanFamily   @relation(fields: [familyId], references: [id])
+  createdBy FamilyPlanAccount? @relation("FamilyPlanInviteCreator", fields: [createdByAccountId], references: [id])
+
+  @@index([familyId, status])
+  @@index([createdByAccountId])
+}
+
 model FamilyPlanChild {
   id        String   @id @default(cuid())
   familyKey String

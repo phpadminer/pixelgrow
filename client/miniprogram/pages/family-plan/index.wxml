@@ -19,6 +19,10 @@
         <view>
           <view class="eyebrow">{{roleLabel}}</view>
           <view class="page-title">{{pageTitle}}</view>
+          <button wx:if="{{isParent && account}}" class="family-status" bindtap="openFamilySwitcher">
+            <text>{{familyTitle}}</text>
+            <text class="family-status-action">切换</text>
+          </button>
         </view>
         <view class="header-actions">
           <button wx:if="{{!isGuest}}" class="header-icon-button {{activeTab === 'notifications' ? 'active' : ''}}" bindtap="openNotifications" aria-label="通知">
@@ -85,14 +89,25 @@
           <button class="primary-button compact" bindtap="openTimer">开始专注</button>
         </view>
 
-        <view class="quick-actions" wx:if="{{isParent}}">
+        <view wx:if="{{isParent && account && !activeFamily}}" class="focus-card family-empty-card">
+          <view>
+            <view class="muted strong">还没有家庭</view>
+            <view class="agenda-title">先创建家庭，或输入邀请码加入别人家庭。</view>
+          </view>
+          <view class="family-actions inline">
+            <button class="secondary-button" bindtap="openJoinFamilyForm">加入家庭</button>
+            <button class="primary-button" bindtap="openCreateFamilyForm">创建家庭</button>
+          </view>
+        </view>
+
+        <view class="quick-actions" wx:if="{{isParent && activeFamily}}">
           <view class="quick-card course" data-kind="courses" bindtap="openItemForm">＋ 加课程</view>
           <view class="quick-card habit" data-kind="habits" bindtap="openItemForm">✓ 加习惯</view>
           <view class="quick-card task" data-kind="tasks" bindtap="openItemForm">▣ 加任务</view>
           <view class="quick-card milestone" data-kind="milestones" bindtap="openItemForm">◷ 倒计时</view>
         </view>
 
-        <view class="course-summary" wx:if="{{isParent && courseSummary.length > 0}}">
+        <view class="course-summary" wx:if="{{isParent && activeFamily && courseSummary.length > 0}}">
           <view class="section-head course-summary-head">
             <view>
               <view class="section-title">课程汇总</view>
@@ -229,7 +244,7 @@
 
         <view class="section-head calendar-agenda-head">
           <view class="section-title">{{selectedDateLabel}} 安排</view>
-          <button wx:if="{{isParent}}" class="primary-button compact" data-kind="tasks" bindtap="openItemForm">＋ 加任务</button>
+          <button wx:if="{{isParent && activeFamily}}" class="primary-button compact" data-kind="tasks" bindtap="openItemForm">＋ 加任务</button>
         </view>
         <view class="empty-card" wx:if="{{selectedAgenda.length === 0}}">这天没有安排。</view>
         <view wx:for="{{selectedAgenda}}" wx:key="id" class="list-row" data-id="{{item.id}}" bindtap="openCalendarAgendaDetail">
@@ -305,7 +320,7 @@
 
       <view class="tab-content" wx:elif="{{activeTab === 'exchange'}}">
         <view class="exchange-config">
-          <view wx:if="{{isParent}}">
+          <view wx:if="{{isParent && activeFamily}}">
             <view class="muted strong">礼品配置</view>
             <view class="summary-percent">{{giftCards.length}}</view>
             <view class="muted">已上架 {{activeGiftCount}}，待处理 {{pendingRedemptionCount}}</view>
@@ -314,7 +329,7 @@
             <view class="muted strong">可用积分</view>
             <view class="summary-percent">{{selectedChildPoints}}</view>
           </view>
-          <button wx:if="{{isParent}}" class="primary-button compact" bindtap="openGiftForm">＋ 加礼品</button>
+          <button wx:if="{{isParent && activeFamily}}" class="primary-button compact" bindtap="openGiftForm">＋ 加礼品</button>
         </view>
 
         <view class="section-title">礼品中心</view>
@@ -331,7 +346,7 @@
               <view>库存 {{item.stock}}</view>
             </view>
             <view class="gift-actions">
-              <button wx:if="{{isParent}}" class="secondary-button" data-id="{{item.id}}" bindtap="openGiftForm">编辑</button>
+              <button wx:if="{{isParent && activeFamily}}" class="secondary-button" data-id="{{item.id}}" bindtap="openGiftForm">编辑</button>
               <button wx:if="{{isChild}}" class="primary-button small" data-id="{{item.id}}" bindtap="requestGift">申请兑换</button>
             </view>
           </view>
@@ -344,7 +359,7 @@
             <view class="agenda-title">{{item.giftTitle}}</view>
             <view class="muted">{{item.pointsCost}} 积分 · {{item.status}}</view>
           </view>
-          <view wx:if="{{isParent && item.status === 'pending'}}" class="redemption-actions">
+          <view wx:if="{{isParent && activeFamily && item.status === 'pending'}}" class="redemption-actions">
             <button class="secondary-button mini" data-id="{{item.id}}" data-status="rejected" bindtap="decideRedemption">退回</button>
             <button class="primary-button mini" data-id="{{item.id}}" data-status="approved" bindtap="decideRedemption">通过</button>
           </view>
@@ -357,12 +372,12 @@
             <view class="section-title">规则查看</view>
             <view class="muted">共同规则 + {{selectedChild.name}} 的独立规则</view>
           </view>
-          <button wx:if="{{isParent}}" class="primary-button compact" bindtap="openRuleForm">＋ 规则</button>
+          <button wx:if="{{isParent && activeFamily}}" class="primary-button compact" bindtap="openRuleForm">＋ 规则</button>
         </view>
         <view wx:for="{{visibleRules}}" wx:key="id" class="rule-card">
           <view class="rule-top">
             <view class="rule-scope">{{item.scope === 'common' ? '共同规则' : '独立规则'}}</view>
-            <button wx:if="{{isParent}}" class="text-button" data-id="{{item.id}}" bindtap="openRuleForm">编辑</button>
+            <button wx:if="{{isParent && activeFamily}}" class="text-button" data-id="{{item.id}}" bindtap="openRuleForm">编辑</button>
           </view>
           <view class="agenda-title">{{item.title}}</view>
           <view class="muted">{{item.body}}</view>
@@ -438,10 +453,11 @@
       </view>
 
       <view wx:if="{{loginRole === 'parent'}}">
-        <view class="field-label">手机号</view>
-        <input class="text-input" data-field="phone" value="{{phone}}" bindinput="onLoginInput" type="number" />
-        <view class="field-label">验证码</view>
-        <input class="text-input" data-field="code" value="{{code}}" bindinput="onLoginInput" type="number" />
+        <view class="wechat-login-box">
+          <view class="field-label">微信账号</view>
+          <view class="field-hint">用当前微信创建账号。不会强制授权手机号、头像或昵称。</view>
+          <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="loginWithWechat">微信登录</button>
+        </view>
       </view>
 
       <view wx:else>
@@ -449,10 +465,81 @@
         <input class="text-input" data-field="childCode" value="{{childCode}}" bindinput="onLoginInput" />
         <view class="field-label">PIN</view>
         <input class="text-input" data-field="pinCode" value="{{pinCode}}" bindinput="onLoginInput" password="{{true}}" />
+        <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitLogin">登录</button>
       </view>
 
-      <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitLogin">登录</button>
-      <view class="helper-text">演示账号：家长 13800000000 / 123456；孩子 GEGE01 或 MEIMEI01 / 2580</view>
+      <view class="helper-text">审核体验：家长微信登录后输入邀请码 AUDIT2026；孩子 GEGE01 或 MEIMEI01 / 2580</view>
+    </view>
+  </view>
+
+  <view wx:if="{{familySwitcherOpen}}" class="modal-mask">
+    <view class="sheet family-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">家庭</view>
+          <view class="sheet-title">切换家庭</view>
+        </view>
+        <button class="ghost-button" bindtap="closeFamilySwitcher">关闭</button>
+      </view>
+
+      <view class="family-list" wx:if="{{families.length > 0}}">
+        <view
+          wx:for="{{families}}"
+          wx:key="familyId"
+          class="family-row {{activeFamily && item.familyKey === activeFamily.familyKey ? 'active' : ''}}"
+          data-id="{{item.familyId}}"
+          bindtap="switchFamily"
+        >
+          <view>
+            <view class="family-row-title">{{item.name}}</view>
+            <view class="muted">{{item.role === 'owner' ? '创建者' : item.role === 'admin' ? '管理员' : item.role === 'viewer' ? '只读成员' : '家长成员'}}</view>
+          </view>
+          <view class="family-row-status">{{activeFamily && item.familyKey === activeFamily.familyKey ? '当前' : '进入'}}</view>
+        </view>
+      </view>
+      <view class="empty-card compact" wx:else>还没有加入家庭。</view>
+
+      <view class="family-actions">
+        <button class="secondary-button" bindtap="openJoinFamilyForm">加入家庭</button>
+        <button class="primary-button" bindtap="openCreateFamilyForm">创建家庭</button>
+      </view>
+
+      <button wx:if="{{activeFamily}}" class="secondary-button full" loading="{{loading}}" bindtap="createFamilyInvite">生成邀请码</button>
+      <view wx:if="{{inviteInfo}}" class="invite-box">
+        <view class="field-label">邀请码</view>
+        <view class="invite-code">{{inviteInfo.inviteCode}}</view>
+        <view class="helper-text">已复制到剪贴板，可发给家人加入 {{inviteInfo.familyName}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{createFamilyFormOpen}}" class="modal-mask">
+    <view class="sheet family-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">创建</view>
+          <view class="sheet-title">创建家庭</view>
+        </view>
+        <button class="ghost-button" bindtap="closeCreateFamilyForm">关闭</button>
+      </view>
+      <view class="field-label">家庭名称</view>
+      <input class="text-input" data-field="familyName" value="{{familyName}}" bindinput="onFamilyInput" placeholder="例如：顾家" />
+      <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitCreateFamily">创建家庭</button>
+    </view>
+  </view>
+
+  <view wx:if="{{joinFamilyFormOpen}}" class="modal-mask">
+    <view class="sheet family-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">加入</view>
+          <view class="sheet-title">加入家庭</view>
+        </view>
+        <button class="ghost-button" bindtap="closeJoinFamilyForm">关闭</button>
+      </view>
+      <view class="field-label">邀请码</view>
+      <input class="text-input" data-field="inviteCode" value="{{inviteCode}}" bindinput="onFamilyInput" placeholder="例如：AUDIT2026" />
+      <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitJoinFamily">加入家庭</button>
     </view>
   </view>
 

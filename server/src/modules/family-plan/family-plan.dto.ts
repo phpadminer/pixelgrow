@@ -201,6 +201,21 @@ export class UpdateFamilyPlanCompletionDto extends FamilyKeyDto {
   isMakeup?: boolean
 }
 
+export class WechatFamilyPlanLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  code: string
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  nickname?: string
+
+  @IsString()
+  @IsOptional()
+  avatarUrl?: string
+}
+
 export class ParentLoginDto {
   @IsString()
   @IsNotEmpty()
@@ -219,6 +234,33 @@ export class ChildLoginDto {
   @IsString()
   @IsNotEmpty()
   pinCode: string
+}
+
+export class CreateFamilyPlanFamilyDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(40)
+  name: string
+}
+
+export class CreateFamilyPlanInviteDto {
+  @IsString()
+  @IsOptional()
+  @IsIn(['admin', 'parent', 'viewer'])
+  role?: 'admin' | 'parent' | 'viewer'
+
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  @Max(999)
+  maxUses?: number
+}
+
+export class JoinFamilyPlanInviteDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(32)
+  inviteCode: string
 }
 
 export class UpdateFamilyPlanChildDto extends FamilyKeyDto {

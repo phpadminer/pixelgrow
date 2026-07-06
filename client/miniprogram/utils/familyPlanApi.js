@@ -8,6 +8,10 @@ function getAuthOptions(session) {
     : { skipAuth: true }
 }
 
+function getSessionFamilyKey(session) {
+  return session && session.familyKey ? session.familyKey : FAMILY_KEY
+}
+
 function loadPlan(session) {
   const cacheBust = `_t=${Date.now()}`
   if (session && session.token) {
@@ -24,10 +28,34 @@ function loginChild(payload) {
   return request.post('/family-plan/auth/child', payload, { skipAuth: true })
 }
 
+function loginWechat(payload) {
+  return request.post('/family-plan/auth/wechat', payload, { skipAuth: true })
+}
+
+function listFamilies(session) {
+  return request.get('/family-plan/families', {}, getAuthOptions(session))
+}
+
+function createFamily(payload, session) {
+  return request.post('/family-plan/families', payload, getAuthOptions(session))
+}
+
+function createInvite(payload, session) {
+  return request.post('/family-plan/invites', payload, getAuthOptions(session))
+}
+
+function joinFamilyByInvite(payload, session) {
+  return request.post('/family-plan/invites/join', payload, getAuthOptions(session))
+}
+
+function switchFamily(familyId, session) {
+  return request.post(`/family-plan/families/${encodeURIComponent(familyId)}/switch`, {}, getAuthOptions(session))
+}
+
 function updateCompletion(itemKey, completed, session, options = {}) {
   return request.put(
     `/family-plan/completions/${encodeURIComponent(itemKey)}`,
-    { familyKey: FAMILY_KEY, completed, isMakeup: Boolean(options.isMakeup) },
+    { familyKey: getSessionFamilyKey(session), completed, isMakeup: Boolean(options.isMakeup) },
     getAuthOptions(session)
   )
 }
@@ -35,7 +63,7 @@ function updateCompletion(itemKey, completed, session, options = {}) {
 function createPlanItem(type, payload, session) {
   return request.post(
     `/family-plan/${type}`,
-    Object.assign({ familyKey: FAMILY_KEY }, payload),
+    Object.assign({ familyKey: getSessionFamilyKey(session) }, payload),
     getAuthOptions(session)
   )
 }
@@ -43,27 +71,28 @@ function createPlanItem(type, payload, session) {
 function updatePlanItem(type, id, payload, session) {
   return request.put(
     `/family-plan/${type}/${encodeURIComponent(id)}`,
-    Object.assign({ familyKey: FAMILY_KEY }, payload),
+    Object.assign({ familyKey: getSessionFamilyKey(session) }, payload),
     getAuthOptions(session)
   )
 }
 
 function deletePlanItem(type, id, session) {
+  const familyKey = getSessionFamilyKey(session)
   return request.del(
-    `/family-plan/${type}/${encodeURIComponent(id)}?familyKey=${encodeURIComponent(FAMILY_KEY)}`,
+    `/family-plan/${type}/${encodeURIComponent(id)}?familyKey=${encodeURIComponent(familyKey)}`,
     {},
     getAuthOptions(session)
   )
 }
 
 function createGift(payload, session) {
-  return request.post('/family-plan/gifts', Object.assign({ familyKey: FAMILY_KEY }, payload), getAuthOptions(session))
+  return request.post('/family-plan/gifts', Object.assign({ familyKey: getSessionFamilyKey(session) }, payload), getAuthOptions(session))
 }
 
 function updateGift(id, payload, session) {
   return request.put(
     `/family-plan/gifts/${encodeURIComponent(id)}`,
-    Object.assign({ familyKey: FAMILY_KEY }, payload),
+    Object.assign({ familyKey: getSessionFamilyKey(session) }, payload),
     getAuthOptions(session)
   )
 }
@@ -71,7 +100,7 @@ function updateGift(id, payload, session) {
 function createRedemption(payload, session) {
   return request.post(
     '/family-plan/redemptions',
-    Object.assign({ familyKey: FAMILY_KEY }, payload),
+    Object.assign({ familyKey: getSessionFamilyKey(session) }, payload),
     getAuthOptions(session)
   )
 }
@@ -79,26 +108,27 @@ function createRedemption(payload, session) {
 function updateRedemptionStatus(id, status, session) {
   return request.put(
     `/family-plan/redemptions/${encodeURIComponent(id)}/status`,
-    { familyKey: FAMILY_KEY, status },
+    { familyKey: getSessionFamilyKey(session), status },
     getAuthOptions(session)
   )
 }
 
 function createRule(payload, session) {
-  return request.post('/family-plan/rules', Object.assign({ familyKey: FAMILY_KEY }, payload), getAuthOptions(session))
+  return request.post('/family-plan/rules', Object.assign({ familyKey: getSessionFamilyKey(session) }, payload), getAuthOptions(session))
 }
 
 function updateRule(id, payload, session) {
   return request.put(
     `/family-plan/rules/${encodeURIComponent(id)}`,
-    Object.assign({ familyKey: FAMILY_KEY }, payload),
+    Object.assign({ familyKey: getSessionFamilyKey(session) }, payload),
     getAuthOptions(session)
   )
 }
 
 function deleteRule(id, session) {
+  const familyKey = getSessionFamilyKey(session)
   return request.del(
-    `/family-plan/rules/${encodeURIComponent(id)}?familyKey=${encodeURIComponent(FAMILY_KEY)}`,
+    `/family-plan/rules/${encodeURIComponent(id)}?familyKey=${encodeURIComponent(familyKey)}`,
     {},
     getAuthOptions(session)
   )
@@ -107,7 +137,7 @@ function deleteRule(id, session) {
 function updateChildProfile(childId, payload, session) {
   return request.put(
     `/family-plan/children/${encodeURIComponent(childId)}`,
-    Object.assign({ familyKey: FAMILY_KEY }, payload),
+    Object.assign({ familyKey: getSessionFamilyKey(session) }, payload),
     getAuthOptions(session)
   )
 }
@@ -117,6 +147,12 @@ module.exports = {
   loadPlan,
   loginParent,
   loginChild,
+  loginWechat,
+  listFamilies,
+  createFamily,
+  createInvite,
+  joinFamilyByInvite,
+  switchFamily,
   updateCompletion,
   createPlanItem,
   updatePlanItem,

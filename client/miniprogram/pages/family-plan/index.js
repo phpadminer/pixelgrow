@@ -169,6 +169,25 @@ function getRoleLabel(role) {
   return '体验模式'
 }
 
+function getActiveFamily(session) {
+  if (!session) return null
+  if (session.activeFamily) return session.activeFamily
+  if (!session.familyKey) return null
+  return {
+    familyId: session.familyId || session.familyKey,
+    familyKey: session.familyKey,
+    name: session.familyName || '当前家庭',
+    role: session.memberRole || 'parent',
+  }
+}
+
+function getFamilyTitle(session) {
+  if (!session) return '体验家庭'
+  if (session.role === 'child') return '孩子账号'
+  const activeFamily = getActiveFamily(session)
+  return activeFamily ? activeFamily.name : '未加入家庭'
+}
+
 function getCustomNavPadding() {
   try {
     const menu = wx.getMenuButtonBoundingClientRect()
@@ -625,6 +644,16 @@ Page({
     childCode: 'GEGE01',
     pinCode: '2580',
     session: null,
+    account: null,
+    families: [],
+    activeFamily: null,
+    familyTitle: '体验家庭',
+    familySwitcherOpen: false,
+    createFamilyFormOpen: false,
+    joinFamilyFormOpen: false,
+    familyName: '我的家庭',
+    inviteCode: '',
+    inviteInfo: null,
     isLoggedIn: true,
     isGuest: true,
     isParent: false,
@@ -726,9 +755,14 @@ Page({
   onLoad() {
     const session = wx.getStorageSync(SESSION_KEY) || null
     const role = session && session.role ? session.role : 'guest'
+    const activeFamily = getActiveFamily(session)
     const today = todayString()
     this.setData({
       session,
+      account: session && session.account ? session.account : null,
+      families: session && Array.isArray(session.families) ? session.families : activeFamily ? [activeFamily] : [],
+      activeFamily,
+      familyTitle: getFamilyTitle(session),
       isLoggedIn: true,
       isGuest: !session,
       isParent: session && session.role === 'parent',
@@ -767,25 +801,71 @@ Page({
     this.setData({ loginFormOpen: false })
   },
 
-  async submitLogin() {
+  applySession(session, extraPatch = {}) {
+    const role = session && session.role ? session.role : 'guest'
+    const activeFamily = getActiveFamily(session)
+    const families = session && Array.isArray(session.families) ? session.families : activeFamily ? [activeFamily] : []
+    wx.setStorageSync(SESSION_KEY, session)
+    this.setData(Object.assign({
+      session,
+      account: session && session.account ? session.account : null,
+      families,
+      activeFamily,
+      familyTitle: getFamilyTitle(session),
+      isLoggedIn: true,
+      isGuest: !session,
+      isParent: role === 'parent',
+      isChild: role === 'child',
+      roleLabel: getRoleLabel(role),
+      tabs: getTabsForRole(role),
+      activeTab: 'today',
+      pageTitle: getPageTitle(role, 'today'),
+      selectedChildId: session && session.childId ? session.childId : this.data.selectedChildId,
+      loginFormOpen: false,
+      familySwitcherOpen: false,
+      createFamilyFormOpen: false,
+      joinFamilyFormOpen: false,
+    }, extraPatch))
+  },
+
+  async loginWithWechat() {
     this.setData({ loading: true })
     try {
-      const session = this.data.loginRole === 'parent'
-        ? await api.loginParent({ phone: this.data.phone, code: this.data.code })
-        : await api.loginChild({ childCode: this.data.childCode, pinCode: this.data.pinCode })
-      wx.setStorageSync(SESSION_KEY, session)
-      this.setData({
-        session,
-        isLoggedIn: true,
-        isGuest: false,
-        isParent: session.role === 'parent',
-        isChild: session.role === 'child',
-        roleLabel: getRoleLabel(session.role),
-        tabs: getTabsForRole(session.role),
-        activeTab: 'today',
-        pageTitle: getPageTitle(session.role, 'today'),
+      const code = await new Promise((resolve, reject) => {
+        wx.login({
+          success: (res) => {
+            if (res && res.code) {
+              resolve(res.code)
+              return
+            }
+            reject(new Error('微信登录失败'))
+          },
+          fail: reject,
+        })
+      })
+      const session = await api.loginWechat({ code })
+      this.applySession(session, {
+        selectedChildId: session.childId || '',
+      })
+      wx.showToast({ title: session.activeFamily ? '登录成功' : '请选择家庭', icon: 'none' })
+      await this.fetchPlan()
+    } catch (err) {
+      this.showError(err, '微信登录失败')
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  async submitLogin() {
+    if (this.data.loginRole === 'parent') {
+      await this.loginWithWechat()
+      return
+    }
+    this.setData({ loading: true })
+    try {
+      const session = await api.loginChild({ childCode: this.data.childCode, pinCode: this.data.pinCode })
+      this.applySession(session, {
         selectedChildId: session.childId || this.data.selectedChildId,
-        loginFormOpen: false,
       })
       wx.showToast({ title: '登录成功', icon: 'success' })
       await this.fetchPlan()
@@ -805,16 +885,169 @@ Page({
       isGuest: true,
       isParent: false,
       isChild: false,
+      account: null,
+      families: [],
+      activeFamily: null,
+      familyTitle: '体验家庭',
       selectedChildId: '',
       activeTab: 'today',
       tabs: PARENT_TABS,
       pageTitle: getPageTitle('guest', 'today'),
       roleLabel: getRoleLabel('guest'),
       loginFormOpen: false,
+      familySwitcherOpen: false,
+      createFamilyFormOpen: false,
+      joinFamilyFormOpen: false,
+      inviteInfo: null,
       notifications: [],
       notificationCount: 0,
     })
     this.fetchPlan()
+  },
+
+  async loadFamilies() {
+    if (!this.data.session || !this.data.account) return
+    const result = await api.listFamilies(this.data.session)
+    const activeFamily = result.activeFamily || this.data.activeFamily || null
+    const session = Object.assign({}, this.data.session, {
+      families: result.families || [],
+      activeFamily,
+    })
+    wx.setStorageSync(SESSION_KEY, session)
+    this.setData({
+      session,
+      families: result.families || [],
+      activeFamily,
+      familyTitle: getFamilyTitle(session),
+    })
+  },
+
+  async openFamilySwitcher() {
+    if (!this.data.account) {
+      this.openLoginForm()
+      return
+    }
+    try {
+      await this.loadFamilies()
+    } catch (err) {
+      this.showError(err, '家庭列表加载失败')
+      return
+    }
+    this.setData({ familySwitcherOpen: true, inviteInfo: null })
+  },
+
+  closeFamilySwitcher() {
+    this.setData({ familySwitcherOpen: false, inviteInfo: null })
+  },
+
+  openCreateFamilyForm() {
+    if (!this.data.account) {
+      this.openLoginForm()
+      return
+    }
+    this.setData({
+      familySwitcherOpen: false,
+      createFamilyFormOpen: true,
+      familyName: this.data.familyName || '我的家庭',
+    })
+  },
+
+  closeCreateFamilyForm() {
+    this.setData({ createFamilyFormOpen: false })
+  },
+
+  openJoinFamilyForm() {
+    if (!this.data.account) {
+      this.openLoginForm()
+      return
+    }
+    this.setData({
+      familySwitcherOpen: false,
+      joinFamilyFormOpen: true,
+      inviteCode: this.data.inviteCode || '',
+    })
+  },
+
+  closeJoinFamilyForm() {
+    this.setData({ joinFamilyFormOpen: false })
+  },
+
+  onFamilyInput(event) {
+    const field = event.currentTarget.dataset.field
+    this.setData({ [field]: event.detail.value })
+  },
+
+  async submitCreateFamily() {
+    const name = String(this.data.familyName || '').trim()
+    if (!name) {
+      wx.showToast({ title: '家庭名称必填', icon: 'none' })
+      return
+    }
+    this.setData({ loading: true })
+    try {
+      const session = await api.createFamily({ name }, this.data.session)
+      this.applySession(session)
+      wx.showToast({ title: '家庭已创建', icon: 'success' })
+      await this.fetchPlan()
+    } catch (err) {
+      this.showError(err, '创建家庭失败')
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  async submitJoinFamily() {
+    const inviteCode = String(this.data.inviteCode || '').trim()
+    if (!inviteCode) {
+      wx.showToast({ title: '邀请码必填', icon: 'none' })
+      return
+    }
+    this.setData({ loading: true })
+    try {
+      const session = await api.joinFamilyByInvite({ inviteCode }, this.data.session)
+      this.applySession(session)
+      wx.showToast({ title: '已加入家庭', icon: 'success' })
+      await this.fetchPlan()
+    } catch (err) {
+      this.showError(err, '加入家庭失败')
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  async switchFamily(event) {
+    const familyId = event.currentTarget.dataset.id
+    if (!familyId) return
+    this.setData({ loading: true })
+    try {
+      const session = await api.switchFamily(familyId, this.data.session)
+      this.applySession(session)
+      wx.showToast({ title: '已切换家庭', icon: 'success' })
+      await this.fetchPlan()
+    } catch (err) {
+      this.showError(err, '切换家庭失败')
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  async createFamilyInvite() {
+    if (!this.data.activeFamily) {
+      wx.showToast({ title: '请先选择家庭', icon: 'none' })
+      return
+    }
+    this.setData({ loading: true })
+    try {
+      const inviteInfo = await api.createInvite({ role: 'parent' }, this.data.session)
+      this.setData({ inviteInfo })
+      if (wx.setClipboardData) {
+        wx.setClipboardData({ data: inviteInfo.inviteCode })
+      }
+    } catch (err) {
+      this.showError(err, '生成邀请码失败')
+    } finally {
+      this.setData({ loading: false })
+    }
   },
 
   async fetchPlan() {
@@ -1065,6 +1298,10 @@ Page({
 
   openItemForm(event) {
     if (!this.data.isParent) return
+    if (!this.data.activeFamily) {
+      this.openFamilySwitcher()
+      return
+    }
     const kind = event.currentTarget.dataset.kind || 'tasks'
     const titleMap = {
       courses: '添加课程',
@@ -1578,6 +1815,10 @@ Page({
 
   openGiftForm(event) {
     if (!this.data.isParent) return
+    if (!this.data.activeFamily) {
+      this.openFamilySwitcher()
+      return
+    }
     const id = event.currentTarget.dataset.id
     const gift = this.data.gifts.find((item) => item.id === id)
     this.setData({
@@ -1834,6 +2075,7 @@ Page({
 
   async decideRedemption(event) {
     if (!this.data.isParent) return
+    if (!this.data.activeFamily) return
     const id = event.currentTarget.dataset.id
     const status = event.currentTarget.dataset.status
     try {
@@ -1847,6 +2089,10 @@ Page({
 
   openRuleForm(event) {
     if (!this.data.isParent) return
+    if (!this.data.activeFamily) {
+      this.openFamilySwitcher()
+      return
+    }
     const id = event.currentTarget.dataset.id
     const rule = this.data.rules.find((item) => item.id === id)
     this.setData({

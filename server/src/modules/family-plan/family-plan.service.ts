@@ -3,13 +3,16 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException,
 import { PrismaService } from '../../prisma/prisma.service'
 import {
   ChildLoginDto,
+  CreateFamilyPlanFamilyDto,
   CreateFamilyPlanCourseDto,
   CreateFamilyPlanGiftDto,
   CreateFamilyPlanHabitDto,
+  CreateFamilyPlanInviteDto,
   CreateFamilyPlanMilestoneDto,
   CreateFamilyPlanRedemptionDto,
   CreateFamilyPlanRuleDto,
   CreateFamilyPlanTaskDto,
+  JoinFamilyPlanInviteDto,
   ParentLoginDto,
   UpdateFamilyPlanChildDto,
   UpdateFamilyPlanCourseDto,
@@ -19,15 +22,20 @@ import {
   UpdateFamilyPlanRedemptionStatusDto,
   UpdateFamilyPlanRuleDto,
   UpdateFamilyPlanTaskDto,
+  WechatFamilyPlanLoginDto,
 } from './family-plan.dto'
 
 const DEFAULT_FAMILY_KEY = 'demo-family'
+const AUDIT_FAMILY_KEY = 'audit-family'
+const AUDIT_INVITE_CODE = process.env.FAMILY_PLAN_AUDIT_INVITE_CODE || 'AUDIT2026'
 const PARENT_DEMO_CODE = '123456'
 const TOKEN_SECRET = process.env.FAMILY_PLAN_TOKEN_SECRET || 'family-plan-dev-secret'
 const SEED_MODES = ['demo', 'starter', 'off'] as const
 const MAX_INLINE_GIFT_IMAGE_LENGTH = 200000
+const FAMILY_MEMBER_ROLES = ['owner', 'admin', 'parent', 'viewer'] as const
 
 type FamilyPlanSeedMode = typeof SEED_MODES[number]
+type FamilyPlanMemberRole = typeof FAMILY_MEMBER_ROLES[number]
 
 function getSeedMode(): FamilyPlanSeedMode {
   const configuredMode = process.env.FAMILY_PLAN_SEED_MODE
@@ -179,7 +187,11 @@ const defaultGifts = [
 
 type FamilyPlanSession = {
   role: 'parent' | 'child'
-  familyKey: string
+  familyKey?: string
+  familyId?: string
+  accountId?: string
+  familyName?: string
+  memberRole?: FamilyPlanMemberRole
   childId?: string
   name?: string
   exp: number
@@ -411,15 +423,106 @@ function getCourseTimeForDate(course: { schedules?: unknown; extraSessions?: unk
   return extraSession?.time || getScheduleTimeForDate(course.schedules, date, course.time)
 }
 
+function normalizeFamilyName(name?: string) {
+  const value = name?.trim() || ''
+  if (!value) {
+    throw new BadRequestException('家庭名称必填')
+  }
+  return value.slice(0, 40)
+}
+
+function normalizeInviteCode(inviteCode?: string) {
+  const value = inviteCode?.trim().toUpperCase() || ''
+  if (!value) {
+    throw new BadRequestException('邀请码必填')
+  }
+  return value
+}
+
+function normalizeMemberRole(role?: string): FamilyPlanMemberRole {
+  return FAMILY_MEMBER_ROLES.includes(role as FamilyPlanMemberRole) ? role as FamilyPlanMemberRole : 'parent'
+}
+
+function makePublicKey(prefix: string) {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function serializeAccount(account) {
+  return {
+    id: account.id,
+    nickname: account.nickname,
+    avatarUrl: account.avatarUrl,
+  }
+}
+
+function serializeFamilyMembership(member) {
+  return {
+    id: member.family.id,
+    familyId: member.family.id,
+    familyKey: member.family.familyKey,
+    name: member.family.name,
+    role: member.role,
+    status: member.status,
+    ownerAccountId: member.family.ownerAccountId,
+  }
+}
+
 @Injectable()
 export class FamilyPlanService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async loginWechat(dto: WechatFamilyPlanLoginDto) {
+    const wechatOpenId = await this.exchangeCodeForOpenId(dto.code)
+    const legacyUser = await this.prisma.user.findUnique({ where: { openId: wechatOpenId } })
+    const account = await this.prisma.familyPlanAccount.upsert({
+      where: { wechatOpenId },
+      update: {
+        ...(legacyUser?.id && { legacyUserId: legacyUser.id }),
+        ...(dto.nickname !== undefined && { nickname: dto.nickname.trim() || null }),
+        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+      },
+      create: {
+        wechatOpenId,
+        legacyUserId: legacyUser?.id,
+        nickname: dto.nickname?.trim() || legacyUser?.name || '微信用户',
+        avatarUrl: dto.avatarUrl || legacyUser?.avatar,
+      },
+    })
+    const families = await this.getFamilyMemberships(account.id)
+    const activeFamily = families[0] || null
+    const token = signSession(activeFamily
+      ? {
+        role: 'parent',
+        accountId: account.id,
+        familyId: activeFamily.familyId,
+        familyKey: activeFamily.familyKey,
+        familyName: activeFamily.name,
+        memberRole: activeFamily.role,
+        name: account.nickname || '家长',
+      }
+      : {
+        role: 'parent',
+        accountId: account.id,
+        name: account.nickname || '家长',
+      })
+
+    return {
+      token,
+      role: 'parent',
+      account: serializeAccount(account),
+      families,
+      activeFamily,
+      familyKey: activeFamily?.familyKey || '',
+      name: account.nickname || '家长',
+    }
+  }
 
   async loginParent(dto: ParentLoginDto) {
     if (dto.code !== PARENT_DEMO_CODE) {
       throw new UnauthorizedException('验证码不正确')
     }
 
+    await this.ensureFamilyRecord(DEFAULT_FAMILY_KEY, '演示家庭')
     await this.ensureSeedData(DEFAULT_FAMILY_KEY)
     return {
       token: signSession({
@@ -462,8 +565,151 @@ export class FamilyPlanService {
     }
   }
 
+  async listFamilies(authorization?: string) {
+    const session = this.requireAccountSession(authorization)
+    const families = await this.getFamilyMemberships(session.accountId)
+    const activeFamily = families.find((item) => item.familyId === session.familyId || item.familyKey === session.familyKey) || families[0] || null
+    return {
+      families,
+      activeFamily,
+      familyKey: activeFamily?.familyKey || '',
+    }
+  }
+
+  async createFamily(dto: CreateFamilyPlanFamilyDto, authorization?: string) {
+    const session = this.requireAccountSession(authorization)
+    const familyKey = await this.createUniqueFamilyKey()
+    const family = await this.prisma.familyPlanFamily.create({
+      data: {
+        familyKey,
+        name: normalizeFamilyName(dto.name),
+        ownerAccountId: session.accountId,
+        members: {
+          create: {
+            accountId: session.accountId,
+            role: 'owner',
+            status: 'active',
+          },
+        },
+      },
+    })
+    await this.ensureSeedData(family.familyKey)
+
+    const membership = await this.getMembership(session.accountId, family.id)
+    return this.toParentAuthResult(session.accountId, membership)
+  }
+
+  async switchFamily(id: string, authorization?: string) {
+    const session = this.requireAccountSession(authorization)
+    const membership = await this.findMembershipByFamilyIdentity(session.accountId, id)
+    if (!membership) {
+      throw new ForbiddenException('你还没有加入这个家庭')
+    }
+    return this.toParentAuthResult(session.accountId, membership)
+  }
+
+  async createInvite(dto: CreateFamilyPlanInviteDto, authorization?: string) {
+    const session = this.requireActiveFamilySession(authorization)
+    if (session.memberRole === 'viewer') {
+      throw new ForbiddenException('只有家庭成员可以邀请')
+    }
+    const invite = await this.prisma.familyPlanInvite.create({
+      data: {
+        familyId: session.familyId,
+        inviteCode: await this.createUniqueInviteCode(),
+        role: normalizeMemberRole(dto.role),
+        maxUses: dto.maxUses,
+        createdByAccountId: session.accountId,
+      },
+      include: {
+        family: true,
+      },
+    })
+
+    return {
+      id: invite.id,
+      inviteCode: invite.inviteCode,
+      role: invite.role,
+      familyId: invite.familyId,
+      familyKey: invite.family.familyKey,
+      familyName: invite.family.name,
+      maxUses: invite.maxUses,
+      usedCount: invite.usedCount,
+      status: invite.status,
+    }
+  }
+
+  async joinInvite(dto: JoinFamilyPlanInviteDto, authorization?: string) {
+    const session = this.requireAccountSession(authorization)
+    const inviteCode = normalizeInviteCode(dto.inviteCode)
+    if (inviteCode === AUDIT_INVITE_CODE) {
+      await this.ensureAuditInvite()
+    }
+
+    const invite = await this.prisma.familyPlanInvite.findUnique({
+      where: { inviteCode },
+      include: { family: true },
+    })
+    if (!invite || invite.status !== 'active') {
+      throw new NotFoundException('邀请码不存在')
+    }
+    if (invite.expiresAt && invite.expiresAt < new Date()) {
+      throw new BadRequestException('邀请码已过期')
+    }
+    if (invite.maxUses !== null && invite.maxUses !== undefined && invite.usedCount >= invite.maxUses) {
+      throw new BadRequestException('邀请码已用完')
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.familyPlanFamilyMember.findUnique({
+        where: {
+          familyId_accountId: {
+            familyId: invite.familyId,
+            accountId: session.accountId,
+          },
+        },
+      })
+      if (existing?.status === 'active') {
+        return
+      }
+      if (existing) {
+        await tx.familyPlanFamilyMember.update({
+          where: { id: existing.id },
+          data: {
+            role: normalizeMemberRole(invite.role),
+            status: 'active',
+          },
+        })
+      } else {
+        await tx.familyPlanFamilyMember.create({
+          data: {
+            familyId: invite.familyId,
+            accountId: session.accountId,
+            role: normalizeMemberRole(invite.role),
+            status: 'active',
+          },
+        })
+      }
+      await tx.familyPlanInvite.update({
+        where: { id: invite.id },
+        data: {
+          usedCount: {
+            increment: 1,
+          },
+        },
+      })
+    })
+
+    await this.ensureSeedData(invite.family.familyKey)
+    const membership = await this.getMembership(session.accountId, invite.familyId)
+    return this.toParentAuthResult(session.accountId, membership)
+  }
+
   async getPlan(familyKey = DEFAULT_FAMILY_KEY, authorization?: string) {
     const session = verifySession(authorization)
+    if (session?.accountId && !session.familyKey) {
+      return this.emptyPlan(session)
+    }
     const resolvedFamilyKey = session?.familyKey || familyKey || DEFAULT_FAMILY_KEY
     await this.ensureSeedData(resolvedFamilyKey)
 
@@ -612,7 +858,7 @@ export class FamilyPlanService {
 
   async updateChild(childKey: string, dto: UpdateFamilyPlanChildDto, authorization?: string) {
     const session = verifySession(authorization)
-    const familyKey = session?.familyKey || dto.familyKey || DEFAULT_FAMILY_KEY
+    const familyKey = this.resolveFamilyKey(dto.familyKey, authorization)
     if (session?.role === 'child' && session.childId !== childKey) {
       throw new ForbiddenException('只能修改自己的资料')
     }
@@ -756,7 +1002,7 @@ export class FamilyPlanService {
 
   async createRedemption(dto: CreateFamilyPlanRedemptionDto, authorization?: string) {
     const session = verifySession(authorization)
-    const familyKey = session?.familyKey || dto.familyKey || DEFAULT_FAMILY_KEY
+    const familyKey = this.resolveFamilyKey(dto.familyKey, authorization)
     const childKey = session?.role === 'child' ? session.childId : dto.childId
     if (!childKey) {
       throw new BadRequestException('缺少孩子')
@@ -1100,7 +1346,7 @@ export class FamilyPlanService {
     authorization?: string,
   ) {
     const session = verifySession(authorization)
-    const resolvedFamilyKey = session?.familyKey || familyKey || DEFAULT_FAMILY_KEY
+    const resolvedFamilyKey = this.resolveFamilyKey(familyKey, authorization)
     const rewardSource = await this.getRewardSource(resolvedFamilyKey, itemKey)
     if (session?.role === 'child' && rewardSource.childKey !== session.childId) {
       throw new ForbiddenException('只能完成自己的任务')
@@ -1216,13 +1462,205 @@ export class FamilyPlanService {
     }
   }
 
+  private async exchangeCodeForOpenId(code: string): Promise<string> {
+    const appId = process.env.WX_APP_ID
+    const appSecret = process.env.WX_APP_SECRET
+
+    if (!appId || !appSecret) {
+      return `dev_openid_${code}`
+    }
+
+    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${code}&grant_type=authorization_code`
+    const response = await fetch(url)
+    const data = (await response.json()) as { openid?: string; errcode?: number; errmsg?: string }
+
+    if (!data.openid) {
+      throw new UnauthorizedException(`WeChat login failed: ${data.errmsg || 'unknown error'}`)
+    }
+
+    return data.openid
+  }
+
+  private async getFamilyMemberships(accountId: string) {
+    const memberships = await this.prisma.familyPlanFamilyMember.findMany({
+      where: {
+        accountId,
+        status: 'active',
+      },
+      include: {
+        family: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    })
+    return memberships.map(serializeFamilyMembership)
+  }
+
+  private async getMembership(accountId: string, familyId: string) {
+    const membership = await this.prisma.familyPlanFamilyMember.findUnique({
+      where: {
+        familyId_accountId: {
+          familyId,
+          accountId,
+        },
+      },
+      include: {
+        family: true,
+      },
+    })
+    if (!membership || membership.status !== 'active') {
+      throw new ForbiddenException('你还没有加入这个家庭')
+    }
+    return membership
+  }
+
+  private async findMembershipByFamilyIdentity(accountId: string, familyIdentity: string) {
+    return this.prisma.familyPlanFamilyMember.findFirst({
+      where: {
+        accountId,
+        status: 'active',
+        family: {
+          OR: [
+            { id: familyIdentity },
+            { familyKey: familyIdentity },
+          ],
+        },
+      },
+      include: {
+        family: true,
+      },
+    })
+  }
+
+  private async toParentAuthResult(accountId: string, membership) {
+    const account = await this.prisma.familyPlanAccount.findUnique({ where: { id: accountId } })
+    if (!account) {
+      throw new UnauthorizedException('账号不存在')
+    }
+    const activeFamily = serializeFamilyMembership(membership)
+    const families = await this.getFamilyMemberships(accountId)
+    return {
+      token: signSession({
+        role: 'parent',
+        accountId,
+        familyId: activeFamily.familyId,
+        familyKey: activeFamily.familyKey,
+        familyName: activeFamily.name,
+        memberRole: normalizeMemberRole(activeFamily.role),
+        name: account.nickname || '家长',
+      }),
+      role: 'parent',
+      familyKey: activeFamily.familyKey,
+      name: account.nickname || '家长',
+      account: serializeAccount(account),
+      activeFamily,
+      families,
+    }
+  }
+
+  private requireAccountSession(authorization?: string): FamilyPlanSession & { accountId: string } {
+    const session = verifySession(authorization)
+    if (!session?.accountId) {
+      throw new UnauthorizedException('请先微信登录')
+    }
+    return session as FamilyPlanSession & { accountId: string }
+  }
+
+  private requireActiveFamilySession(authorization?: string): FamilyPlanSession & { accountId: string; familyId: string; familyKey: string } {
+    const session = this.requireAccountSession(authorization)
+    if (!session.familyId || !session.familyKey) {
+      throw new BadRequestException('请先创建或加入家庭')
+    }
+    return session as FamilyPlanSession & { accountId: string; familyId: string; familyKey: string }
+  }
+
+  private async createUniqueFamilyKey() {
+    for (let i = 0; i < 8; i += 1) {
+      const familyKey = makePublicKey('family')
+      const existing = await this.prisma.familyPlanFamily.findUnique({ where: { familyKey } })
+      if (!existing) {
+        return familyKey
+      }
+    }
+    throw new BadRequestException('家庭编号生成失败，请重试')
+  }
+
+  private async createUniqueInviteCode() {
+    for (let i = 0; i < 8; i += 1) {
+      const inviteCode = Math.random().toString(36).slice(2, 8).toUpperCase()
+      const existing = await this.prisma.familyPlanInvite.findUnique({ where: { inviteCode } })
+      if (!existing) {
+        return inviteCode
+      }
+    }
+    throw new BadRequestException('邀请码生成失败，请重试')
+  }
+
+  private async ensureFamilyRecord(familyKey: string, name: string) {
+    return this.prisma.familyPlanFamily.upsert({
+      where: { familyKey },
+      update: {},
+      create: {
+        familyKey,
+        name,
+      },
+    })
+  }
+
+  private async ensureAuditInvite() {
+    const family = await this.ensureFamilyRecord(AUDIT_FAMILY_KEY, '审核家庭')
+    await this.prisma.familyPlanInvite.upsert({
+      where: { inviteCode: AUDIT_INVITE_CODE },
+      update: {
+        familyId: family.id,
+        role: 'parent',
+        status: 'active',
+        maxUses: null,
+      },
+      create: {
+        familyId: family.id,
+        inviteCode: AUDIT_INVITE_CODE,
+        role: 'parent',
+        status: 'active',
+      },
+    })
+    await this.ensureSeedData(AUDIT_FAMILY_KEY)
+  }
+
+  private emptyPlan(session: FamilyPlanSession) {
+    return {
+      session,
+      children: [],
+      courses: [],
+      habits: [],
+      tasks: [],
+      milestones: [],
+      completions: {},
+      gifts: [],
+      redemptions: [],
+      pointLedger: [],
+      rules: [],
+    }
+  }
+
   private resolveFamilyKey(familyKey?: string, authorization?: string) {
-    return verifySession(authorization)?.familyKey || familyKey || DEFAULT_FAMILY_KEY
+    const session = verifySession(authorization)
+    if (session?.accountId && !session.familyKey) {
+      throw new BadRequestException('请先创建或加入家庭')
+    }
+    return session?.familyKey || familyKey || DEFAULT_FAMILY_KEY
   }
 
   private assertParentIfAuthenticated(authorization?: string) {
     const session = verifySession(authorization)
     if (session && session.role !== 'parent') {
+      throw new ForbiddenException('只有家长可以管理计划')
+    }
+    if (session?.accountId && !session.familyKey) {
+      throw new BadRequestException('请先创建或加入家庭')
+    }
+    if (session?.memberRole === 'viewer') {
       throw new ForbiddenException('只有家长可以管理计划')
     }
   }

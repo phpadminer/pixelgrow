@@ -2,13 +2,16 @@ import { Body, Controller, Delete, Get, Headers, Param, Post, Put, Query } from 
 import { FamilyPlanService } from './family-plan.service'
 import {
   ChildLoginDto,
+  CreateFamilyPlanFamilyDto,
   CreateFamilyPlanGiftDto,
   CreateFamilyPlanCourseDto,
   CreateFamilyPlanHabitDto,
+  CreateFamilyPlanInviteDto,
   CreateFamilyPlanMilestoneDto,
   CreateFamilyPlanRedemptionDto,
   CreateFamilyPlanRuleDto,
   CreateFamilyPlanTaskDto,
+  JoinFamilyPlanInviteDto,
   ParentLoginDto,
   UpdateFamilyPlanChildDto,
   UpdateFamilyPlanCourseDto,
@@ -19,11 +22,17 @@ import {
   UpdateFamilyPlanRedemptionStatusDto,
   UpdateFamilyPlanRuleDto,
   UpdateFamilyPlanTaskDto,
+  WechatFamilyPlanLoginDto,
 } from './family-plan.dto'
 
 @Controller('family-plan')
 export class FamilyPlanController {
   constructor(private readonly familyPlanService: FamilyPlanService) {}
+
+  @Post('auth/wechat')
+  loginWechat(@Body() dto: WechatFamilyPlanLoginDto) {
+    return this.familyPlanService.loginWechat(dto)
+  }
 
   @Post('auth/parent')
   loginParent(@Body() dto: ParentLoginDto) {
@@ -33,6 +42,31 @@ export class FamilyPlanController {
   @Post('auth/child')
   loginChild(@Body() dto: ChildLoginDto) {
     return this.familyPlanService.loginChild(dto)
+  }
+
+  @Get('families')
+  listFamilies(@Headers('authorization') authorization?: string) {
+    return this.familyPlanService.listFamilies(authorization)
+  }
+
+  @Post('families')
+  createFamily(@Body() dto: CreateFamilyPlanFamilyDto, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.createFamily(dto, authorization)
+  }
+
+  @Post('families/:id/switch')
+  switchFamily(@Param('id') id: string, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.switchFamily(id, authorization)
+  }
+
+  @Post('invites')
+  createInvite(@Body() dto: CreateFamilyPlanInviteDto, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.createInvite(dto, authorization)
+  }
+
+  @Post('invites/join')
+  joinInvite(@Body() dto: JoinFamilyPlanInviteDto, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.joinInvite(dto, authorization)
   }
 
   @Get()
