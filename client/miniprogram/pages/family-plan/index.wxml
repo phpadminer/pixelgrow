@@ -13,59 +13,23 @@
     <image wx:if="{{isChild && selectedChild}}" class="bg-pattern" src="{{selectedChild.patternPath}}" mode="aspectFit" />
   </view>
 
-  <block wx:if="{{!isLoggedIn}}">
-    <view class="login-hero" style="padding-top: {{customNavPadding}}px;">
-      <view class="hero-family">
-        <image class="hero-avatar hero-side" src="/assets/family/monkey.svg" mode="aspectFit" />
-        <image class="hero-avatar" src="/assets/family/lamb.svg" mode="aspectFit" />
-        <image class="hero-avatar" src="/assets/family/chick.svg" mode="aspectFit" />
-        <image class="hero-avatar hero-side" src="/assets/family/dragon.svg" mode="aspectFit" />
-      </view>
-      <view class="hero-title">伴学点滴</view>
-      <view class="hero-subtitle">每天一点点，完成就有回响</view>
-    </view>
-
-    <view class="login-card">
-      <view class="eyebrow">家庭计划</view>
-      <view class="page-title">登录</view>
-
-      <view class="role-switch">
-        <view class="role-option {{loginRole === 'parent' ? 'active' : ''}}" data-role="parent" bindtap="switchLoginRole">家长</view>
-        <view class="role-option {{loginRole === 'child' ? 'active' : ''}}" data-role="child" bindtap="switchLoginRole">孩子</view>
-      </view>
-
-      <view wx:if="{{loginRole === 'parent'}}">
-        <view class="field-label">手机号</view>
-        <input class="text-input" data-field="phone" value="{{phone}}" bindinput="onLoginInput" type="number" />
-        <view class="field-label">验证码</view>
-        <input class="text-input" data-field="code" value="{{code}}" bindinput="onLoginInput" type="number" />
-      </view>
-
-      <view wx:else>
-        <view class="field-label">孩子码</view>
-        <input class="text-input" data-field="childCode" value="{{childCode}}" bindinput="onLoginInput" />
-        <view class="field-label">PIN</view>
-        <input class="text-input" data-field="pinCode" value="{{pinCode}}" bindinput="onLoginInput" password="{{true}}" />
-      </view>
-
-      <button class="primary-button" loading="{{loading}}" bindtap="submitLogin">登录</button>
-      <view class="helper-text">演示账号：家长 13800000000 / 123456；孩子 GEGE01 或 MEIMEI01 / 2580</view>
-    </view>
-  </block>
-
-  <block wx:else>
+  <block wx:if="{{isLoggedIn}}">
     <view class="app-shell" style="padding-top: {{customNavPadding}}px;">
       <view class="topbar">
         <view>
-          <view class="eyebrow">{{isParent ? '家长端' : '孩子端'}}</view>
+          <view class="eyebrow">{{roleLabel}}</view>
           <view class="page-title">{{pageTitle}}</view>
         </view>
         <view class="header-actions">
-          <button class="header-icon-button {{activeTab === 'notifications' ? 'active' : ''}}" bindtap="openNotifications" aria-label="通知">
+          <button wx:if="{{!isGuest}}" class="header-icon-button {{activeTab === 'notifications' ? 'active' : ''}}" bindtap="openNotifications" aria-label="通知">
             <view class="bell-shape"></view>
             <view wx:if="{{notificationCount > 0}}" class="notification-badge">{{notificationCount}}</view>
           </button>
-          <button class="role-button" bindtap="logout">
+          <button wx:if="{{isGuest}}" class="role-button" bindtap="openLoginForm">
+            <view class="login-shape"></view>
+            <text>登录</text>
+          </button>
+          <button wx:else class="role-button" bindtap="logout">
             <view class="logout-shape"></view>
             <text>退出</text>
           </button>
@@ -457,6 +421,40 @@
       </view>
     </view>
   </block>
+
+  <view wx:if="{{loginFormOpen}}" class="modal-mask">
+    <view class="sheet login-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">主动登录</view>
+          <view class="sheet-title">选择身份登录</view>
+        </view>
+        <button class="ghost-button" bindtap="closeLoginForm">关闭</button>
+      </view>
+
+      <view class="role-switch inner">
+        <view class="role-option {{loginRole === 'parent' ? 'active' : ''}}" data-role="parent" bindtap="switchLoginRole">家长</view>
+        <view class="role-option {{loginRole === 'child' ? 'active' : ''}}" data-role="child" bindtap="switchLoginRole">孩子</view>
+      </view>
+
+      <view wx:if="{{loginRole === 'parent'}}">
+        <view class="field-label">手机号</view>
+        <input class="text-input" data-field="phone" value="{{phone}}" bindinput="onLoginInput" type="number" />
+        <view class="field-label">验证码</view>
+        <input class="text-input" data-field="code" value="{{code}}" bindinput="onLoginInput" type="number" />
+      </view>
+
+      <view wx:else>
+        <view class="field-label">孩子码</view>
+        <input class="text-input" data-field="childCode" value="{{childCode}}" bindinput="onLoginInput" />
+        <view class="field-label">PIN</view>
+        <input class="text-input" data-field="pinCode" value="{{pinCode}}" bindinput="onLoginInput" password="{{true}}" />
+      </view>
+
+      <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitLogin">登录</button>
+      <view class="helper-text">演示账号：家长 13800000000 / 123456；孩子 GEGE01 或 MEIMEI01 / 2580</view>
+    </view>
+  </view>
 
   <view wx:if="{{itemFormOpen}}" class="modal-mask">
     <view class="sheet item-sheet">

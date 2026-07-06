@@ -163,6 +163,12 @@ function getPageTitle(role, tab) {
   return TAB_TITLES[tab] || '家庭计划'
 }
 
+function getRoleLabel(role) {
+  if (role === 'parent') return '家长端'
+  if (role === 'child') return '孩子端'
+  return '体验模式'
+}
+
 function getCustomNavPadding() {
   try {
     const menu = wx.getMenuButtonBoundingClientRect()
@@ -619,9 +625,12 @@ Page({
     childCode: 'GEGE01',
     pinCode: '2580',
     session: null,
-    isLoggedIn: false,
+    isLoggedIn: true,
+    isGuest: true,
     isParent: false,
     isChild: false,
+    roleLabel: getRoleLabel('guest'),
+    loginFormOpen: false,
     loading: false,
     today: todayString(),
     selectedDate: todayString(),
@@ -716,23 +725,24 @@ Page({
 
   onLoad() {
     const session = wx.getStorageSync(SESSION_KEY) || null
+    const role = session && session.role ? session.role : 'guest'
     const today = todayString()
     this.setData({
       session,
-      isLoggedIn: Boolean(session),
+      isLoggedIn: true,
+      isGuest: !session,
       isParent: session && session.role === 'parent',
       isChild: session && session.role === 'child',
-      tabs: getTabsForRole(session && session.role),
-      pageTitle: getPageTitle(session && session.role, 'today'),
+      roleLabel: getRoleLabel(role),
+      tabs: getTabsForRole(role),
+      pageTitle: getPageTitle(role, 'today'),
       today,
       selectedDate: today,
       selectedDateLabel: shortDate(today),
       itemDraft: defaultItemDraft(today),
       customNavPadding: getCustomNavPadding(),
     })
-    if (session) {
-      this.fetchPlan()
-    }
+    this.fetchPlan()
   },
 
   onUnload() {
@@ -749,6 +759,14 @@ Page({
     this.setData({ [field]: event.detail.value })
   },
 
+  openLoginForm() {
+    this.setData({ loginFormOpen: true })
+  },
+
+  closeLoginForm() {
+    this.setData({ loginFormOpen: false })
+  },
+
   async submitLogin() {
     this.setData({ loading: true })
     try {
@@ -759,12 +777,15 @@ Page({
       this.setData({
         session,
         isLoggedIn: true,
+        isGuest: false,
         isParent: session.role === 'parent',
         isChild: session.role === 'child',
+        roleLabel: getRoleLabel(session.role),
         tabs: getTabsForRole(session.role),
         activeTab: 'today',
         pageTitle: getPageTitle(session.role, 'today'),
         selectedChildId: session.childId || this.data.selectedChildId,
+        loginFormOpen: false,
       })
       wx.showToast({ title: '登录成功', icon: 'success' })
       await this.fetchPlan()
@@ -780,16 +801,20 @@ Page({
     wx.removeStorageSync(SESSION_KEY)
     this.setData({
       session: null,
-      isLoggedIn: false,
+      isLoggedIn: true,
+      isGuest: true,
       isParent: false,
       isChild: false,
       selectedChildId: '',
       activeTab: 'today',
       tabs: PARENT_TABS,
-      pageTitle: getPageTitle('parent', 'today'),
+      pageTitle: getPageTitle('guest', 'today'),
+      roleLabel: getRoleLabel('guest'),
+      loginFormOpen: false,
       notifications: [],
       notificationCount: 0,
     })
+    this.fetchPlan()
   },
 
   async fetchPlan() {
@@ -838,7 +863,7 @@ Page({
       milestones: state.milestones,
       completions: state.completions,
     }
-    const role = state.session && state.session.role === 'child' ? 'child' : 'parent'
+    const role = state.session && state.session.role ? state.session.role : 'guest'
     const tabs = getTabsForRole(role)
     let activeTab = state.activeTab
     if (activeTab !== 'notifications' && tabs.every((item) => item.key !== activeTab)) {
@@ -886,6 +911,10 @@ Page({
       tabs,
       activeTab,
       pageTitle: getPageTitle(role, activeTab),
+      roleLabel: getRoleLabel(role),
+      isGuest: role === 'guest',
+      isParent: role === 'parent',
+      isChild: role === 'child',
       selectedChildId,
       selectedChild,
       selectedChildPoints: selectedChild ? Number(selectedChild.points || 0) : 0,

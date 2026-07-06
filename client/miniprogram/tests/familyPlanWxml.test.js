@@ -49,4 +49,19 @@ assert(
   'gift title input should sync on input and blur before validation'
 )
 
+assert(
+  !wxml.includes('<block wx:if="{{!isLoggedIn}}">'),
+  'first screen should not require login before users can browse the service'
+)
+
+assert(
+  wxml.includes('wx:if="{{loginFormOpen}}" class="modal-mask"'),
+  'login form should be opened only after an explicit user action'
+)
+
+assert(
+  wxml.includes('bindtap="openLoginForm"'),
+  'guest users should have an explicit login entry after browsing'
+)
+
 console.log('familyPlanWxml tests passed')
