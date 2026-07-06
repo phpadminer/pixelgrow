@@ -1,6 +1,6 @@
 const request = require('./request')
 
-const FAMILY_KEY = 'demo-family'
+const FAMILY_KEY = 'audit-family'
 
 function getAuthOptions(session) {
   return session && session.token

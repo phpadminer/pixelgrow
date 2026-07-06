@@ -522,25 +522,25 @@ export class FamilyPlanService {
       throw new UnauthorizedException('验证码不正确')
     }
 
-    await this.ensureFamilyRecord(DEFAULT_FAMILY_KEY, '演示家庭')
-    await this.ensureSeedData(DEFAULT_FAMILY_KEY)
+    await this.ensureFamilyRecord(AUDIT_FAMILY_KEY, '审核家庭')
+    await this.ensureSeedData(AUDIT_FAMILY_KEY)
     return {
       token: signSession({
         role: 'parent',
-        familyKey: DEFAULT_FAMILY_KEY,
+        familyKey: AUDIT_FAMILY_KEY,
         name: '家长',
       }),
       role: 'parent',
-      familyKey: DEFAULT_FAMILY_KEY,
+      familyKey: AUDIT_FAMILY_KEY,
       name: '家长',
     }
   }
 
   async loginChild(dto: ChildLoginDto) {
-    await this.ensureSeedData(DEFAULT_FAMILY_KEY)
+    await this.ensureSeedData(AUDIT_FAMILY_KEY)
     const child = await this.prisma.familyPlanChild.findFirst({
       where: {
-        familyKey: DEFAULT_FAMILY_KEY,
+        familyKey: AUDIT_FAMILY_KEY,
         childCode: dto.childCode.trim().toUpperCase(),
         pinCode: dto.pinCode,
       },
@@ -553,12 +553,12 @@ export class FamilyPlanService {
     return {
       token: signSession({
         role: 'child',
-        familyKey: DEFAULT_FAMILY_KEY,
+        familyKey: AUDIT_FAMILY_KEY,
         childId: child.childKey,
         name: child.name,
       }),
       role: 'child',
-      familyKey: DEFAULT_FAMILY_KEY,
+      familyKey: AUDIT_FAMILY_KEY,
       childId: child.childKey,
       name: child.name,
       avatar: child.avatar,
