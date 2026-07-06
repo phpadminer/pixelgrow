@@ -15,6 +15,7 @@ const {
   summaryLabel,
 } = require('../../utils/familyPlanSummary')
 const { buildNotifications } = require('../../utils/familyPlanNotifications')
+const { applyGuestCompletion } = require('../../utils/familyPlanGuestMode')
 const {
   JPEG_DATA_URL_PREFIX,
   MAX_GIFT_IMAGE_BYTES,
@@ -1285,6 +1286,15 @@ Page({
         })
       })
       if (!confirmed) return
+      if (this.data.isGuest) {
+        const completions = applyGuestCompletion(this.data.completions, item.id, completed, { isMakeup: item.isMakeup })
+        wx.showToast({
+          title: completed ? '体验完成，本地临时' : '已取消体验完成',
+          icon: 'none',
+        })
+        this.refreshView({ completions })
+        return
+      }
       await api.updateCompletion(item.id, completed, this.data.session, { isMakeup: item.isMakeup })
       wx.showToast({
         title: item.pendingCompletion ? `确认 +${points}` : this.data.isChild ? '已提交待确认' : `完成 +${points}`,

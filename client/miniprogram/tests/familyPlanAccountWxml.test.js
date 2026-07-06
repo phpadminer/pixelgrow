@@ -10,6 +10,21 @@ assert(
 )
 
 assert(
+  wxml.includes('家庭模式'),
+  'login sheet should clearly label persistent family mode'
+)
+
+assert(
+  wxml.includes('游客模式'),
+  'login sheet should mention temporary guest mode'
+)
+
+assert(
+  wxml.includes('数据临时'),
+  'guest mode copy should make temporary data explicit'
+)
+
+assert(
   wxml.includes('bindtap="openFamilySwitcher"'),
   'logged-in parent should be able to switch families'
 )

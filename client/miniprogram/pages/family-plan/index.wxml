@@ -442,20 +442,20 @@
       <view class="sheet-head">
         <view>
           <view class="eyebrow">主动登录</view>
-          <view class="sheet-title">选择身份登录</view>
+          <view class="sheet-title">选择使用模式</view>
         </view>
         <button class="ghost-button" bindtap="closeLoginForm">关闭</button>
       </view>
 
       <view class="role-switch inner">
-        <view class="role-option {{loginRole === 'parent' ? 'active' : ''}}" data-role="parent" bindtap="switchLoginRole">家长</view>
+        <view class="role-option {{loginRole === 'parent' ? 'active' : ''}}" data-role="parent" bindtap="switchLoginRole">家庭模式</view>
         <view class="role-option {{loginRole === 'child' ? 'active' : ''}}" data-role="child" bindtap="switchLoginRole">孩子</view>
       </view>
 
       <view wx:if="{{loginRole === 'parent'}}">
         <view class="wechat-login-box">
-          <view class="field-label">微信账号</view>
-          <view class="field-hint">用当前微信创建账号。不会强制授权手机号、头像或昵称。</view>
+          <view class="field-label">家庭模式</view>
+          <view class="field-hint">微信登录后创建或加入家庭，课程、积分、礼品都会持久保存。</view>
           <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="loginWithWechat">微信登录</button>
         </view>
       </view>
@@ -468,7 +468,7 @@
         <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitLogin">登录</button>
       </view>
 
-      <view class="helper-text">审核体验：家长微信登录后输入邀请码 AUDIT2026；孩子 GEGE01 或 MEIMEI01 / 2580</view>
+      <view class="helper-text">游客模式：关闭弹窗继续体验，数据临时，不保存到家庭。审核体验：家长微信登录后输入邀请码 AUDIT2026；孩子 GEGE01 或 MEIMEI01 / 2580</view>
     </view>
   </view>
 
