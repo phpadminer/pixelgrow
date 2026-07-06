@@ -15,7 +15,7 @@ const {
   summaryLabel,
 } = require('../../utils/familyPlanSummary')
 const { buildNotifications } = require('../../utils/familyPlanNotifications')
-const { applyGuestCompletion } = require('../../utils/familyPlanGuestMode')
+const { addGuestTask, applyGuestCompletion } = require('../../utils/familyPlanGuestMode')
 const {
   JPEG_DATA_URL_PREFIX,
   MAX_GIFT_IMAGE_BYTES,
@@ -1307,16 +1307,19 @@ Page({
   },
 
   openItemForm(event) {
-    if (!this.data.isParent) return
-    if (!this.data.activeFamily) {
-      this.openFamilySwitcher()
-      return
-    }
+    if (!this.data.isParent && !this.data.isGuest) return
     const kind = event.currentTarget.dataset.kind || 'tasks'
+    if (this.data.isGuest && kind !== 'tasks') return
+    if (!this.data.activeFamily) {
+      if (!this.data.isGuest) {
+        this.openFamilySwitcher()
+        return
+      }
+    }
     const titleMap = {
       courses: '添加课程',
       habits: '添加习惯',
-      tasks: '添加任务',
+      tasks: this.data.isGuest ? '添加临时任务' : '添加任务',
       milestones: '添加倒计时',
     }
     const labelMap = {
@@ -1782,6 +1785,16 @@ Page({
     }
 
     try {
+      if (this.data.isGuest) {
+        if (kind !== 'tasks') return
+        const tasks = addGuestTask(this.data.tasks, Object.assign({
+          id: `guest-task-${Date.now()}`,
+        }, payload))
+        wx.showToast({ title: '已新增临时任务', icon: 'none' })
+        this.setData({ itemFormOpen: false, editingItemId: '' })
+        this.refreshView({ tasks })
+        return
+      }
       if (editingItemId) {
         await api.updatePlanItem(kind, editingItemId, payload, this.data.session)
       } else {

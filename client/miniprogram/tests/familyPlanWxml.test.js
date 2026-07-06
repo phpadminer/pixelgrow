@@ -64,4 +64,9 @@ assert(
   'guest users should have an explicit login entry after browsing'
 )
 
+assert(
+  wxml.includes('wx:if="{{isGuest}}"') && wxml.includes('data-kind="tasks" bindtap="openItemForm">▣ 加临时任务'),
+  'guest users should be able to add temporary local tasks'
+)
+
 console.log('familyPlanWxml tests passed')

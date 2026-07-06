@@ -107,6 +107,10 @@
           <view class="quick-card milestone" data-kind="milestones" bindtap="openItemForm">◷ 倒计时</view>
         </view>
 
+        <view class="quick-actions guest-actions" wx:if="{{isGuest}}">
+          <view class="quick-card task" data-kind="tasks" bindtap="openItemForm">▣ 加临时任务</view>
+        </view>
+
         <view class="course-summary" wx:if="{{isParent && activeFamily && courseSummary.length > 0}}">
           <view class="section-head course-summary-head">
             <view>
