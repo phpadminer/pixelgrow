@@ -2112,6 +2112,13 @@ picker {
   background: rgba(255, 248, 232, 0.9);
 }
 
+.gift-image-canvas {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  pointer-events: none;
+}
+
 .image-action {
   margin-top: 16rpx;
 }

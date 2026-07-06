@@ -25,7 +25,7 @@ const DEFAULT_FAMILY_KEY = 'demo-family'
 const PARENT_DEMO_CODE = '123456'
 const TOKEN_SECRET = process.env.FAMILY_PLAN_TOKEN_SECRET || 'family-plan-dev-secret'
 const SEED_MODES = ['demo', 'starter', 'off'] as const
-const MAX_INLINE_GIFT_IMAGE_LENGTH = 160000
+const MAX_INLINE_GIFT_IMAGE_BYTES = 200 * 1024
 
 type FamilyPlanSeedMode = typeof SEED_MODES[number]
 
@@ -41,18 +41,37 @@ function isInlineImageUrl(imageUrl?: string | null) {
   return Boolean(imageUrl && imageUrl.startsWith('data:image/'))
 }
 
+function getBase64ByteLength(base64: string) {
+  const normalized = base64.replace(/\s/g, '')
+  const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0
+  return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding)
+}
+
+function getInlineImageByteLength(imageUrl: string) {
+  const commaIndex = imageUrl.indexOf(',')
+  return getBase64ByteLength(commaIndex >= 0 ? imageUrl.slice(commaIndex + 1) : imageUrl)
+}
+
 function normalizeGiftImageUrl(imageUrl?: string | null) {
   if (!imageUrl) return ''
-  if (isInlineImageUrl(imageUrl) && imageUrl.length > MAX_INLINE_GIFT_IMAGE_LENGTH) {
+  if (isInlineImageUrl(imageUrl) && getInlineImageByteLength(imageUrl) > MAX_INLINE_GIFT_IMAGE_BYTES) {
     return ''
   }
   return imageUrl
 }
 
 function assertGiftImageUrl(imageUrl: string) {
-  if (isInlineImageUrl(imageUrl) && imageUrl.length > MAX_INLINE_GIFT_IMAGE_LENGTH) {
-    throw new BadRequestException('礼品图片太大，请先压缩到 160KB 以内')
+  if (isInlineImageUrl(imageUrl) && getInlineImageByteLength(imageUrl) > MAX_INLINE_GIFT_IMAGE_BYTES) {
+    throw new BadRequestException('礼品图片太大，请先压缩到 200KB 以内')
   }
+}
+
+function normalizeGiftTitle(title: string) {
+  const value = title.trim()
+  if (!value) {
+    throw new BadRequestException('礼品名称必填')
+  }
+  return value
 }
 
 const defaultChildren = [
@@ -715,12 +734,13 @@ export class FamilyPlanService {
   async createGift(dto: CreateFamilyPlanGiftDto, authorization?: string) {
     this.assertParentIfAuthenticated(authorization)
     assertGiftImageUrl(dto.imageUrl)
+    const title = normalizeGiftTitle(dto.title)
     const familyKey = this.resolveFamilyKey(dto.familyKey, authorization)
     return this.prisma.familyPlanGift.create({
       data: {
         familyKey,
-        title: dto.title,
-        description: dto.description,
+        title,
+        description: dto.description?.trim(),
         imageUrl: dto.imageUrl,
         pointsCost: dto.pointsCost,
         stock: dto.stock,
@@ -938,13 +958,14 @@ export class FamilyPlanService {
   async updateGift(id: string, dto: UpdateFamilyPlanGiftDto, authorization?: string) {
     this.assertParentIfAuthenticated(authorization)
     assertGiftImageUrl(dto.imageUrl)
+    const title = normalizeGiftTitle(dto.title)
     const familyKey = this.resolveFamilyKey(dto.familyKey, authorization)
     await this.ensureUpdated(
       this.prisma.familyPlanGift.updateMany({
         where: { id, familyKey },
         data: {
-          title: dto.title,
-          description: dto.description,
+          title,
+          description: dto.description?.trim(),
           imageUrl: dto.imageUrl,
           pointsCost: dto.pointsCost,
           stock: dto.stock,

@@ -44,4 +44,9 @@ assert(
   'daily course-session detail should not be labeled as full course detail'
 )
 
+assert(
+  wxml.includes('data-field="title" value="{{giftDraft.title}}" bindinput="onGiftInput" bindblur="onGiftInput"'),
+  'gift title input should sync on input and blur before validation'
+)
+
 console.log('familyPlanWxml tests passed')

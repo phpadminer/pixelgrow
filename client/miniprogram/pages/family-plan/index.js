@@ -16,6 +16,14 @@ const {
 } = require('../../utils/familyPlanSummary')
 const { buildNotifications } = require('../../utils/familyPlanNotifications')
 const {
+  JPEG_DATA_URL_PREFIX,
+  MAX_GIFT_IMAGE_BYTES,
+  buildGiftPayload,
+  isGiftImageDataUrlWithinLimit,
+  makeGiftImageCompressionPlan,
+  validateGiftDraft,
+} = require('../../utils/familyPlanGiftImage')
+const {
   formatCourseScheduleLabel,
   getCourseSchedules,
   getCourseSessionForDate,
@@ -27,7 +35,6 @@ const {
 } = require('../../utils/familyPlanCourseSchedule')
 
 const SESSION_KEY = 'familyPlanSession'
-const MAX_GIFT_IMAGE_DATA_URL_LENGTH = 160000
 const WEEKDAY_VALUES = [0, 1, 2, 3, 4, 5, 6]
 const WEEKDAY_LABELS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三']
@@ -667,6 +674,9 @@ Page({
     giftFormOpen: false,
     editingGiftId: '',
     giftDraft: defaultGiftDraft(),
+    imageCompressing: false,
+    giftCanvasWidth: 1,
+    giftCanvasHeight: 1,
     ruleFormOpen: false,
     editingRuleId: '',
     ruleScope: 'common',
@@ -1560,7 +1570,10 @@ Page({
   },
 
   onGiftInput(event) {
-    const field = event.currentTarget.dataset.field
+    const currentDataset = event.currentTarget && event.currentTarget.dataset ? event.currentTarget.dataset : {}
+    const targetDataset = event.target && event.target.dataset ? event.target.dataset : {}
+    const field = currentDataset.field || targetDataset.field
+    if (!field) return
     this.setData({ [`giftDraft.${field}`]: event.detail.value })
   },
 
@@ -1569,17 +1582,9 @@ Page({
   },
 
   chooseGiftImage() {
-    const handlePath = (filePath) => {
-      if (wx.compressImage) {
-        wx.compressImage({
-          src: filePath,
-          quality: 45,
-          success: (result) => this.readGiftImage(result.tempFilePath || filePath),
-          fail: () => this.readGiftImage(filePath),
-        })
-        return
-      }
-      this.readGiftImage(filePath)
+    const handlePath = (filePath, size) => {
+      if (!filePath) return
+      this.compressAndSetGiftImage(filePath, size)
     }
 
     if (wx.chooseMedia) {
@@ -1589,7 +1594,7 @@ Page({
         sourceType: ['album', 'camera'],
         success: (result) => {
           const file = result.tempFiles && result.tempFiles[0]
-          if (file && file.tempFilePath) handlePath(file.tempFilePath)
+          if (file && file.tempFilePath) handlePath(file.tempFilePath, file.size)
         },
         fail: () => {},
       })
@@ -1605,39 +1610,160 @@ Page({
     })
   },
 
-  readGiftImage(filePath) {
-    const fs = wx.getFileSystemManager()
-    fs.readFile({
-      filePath,
-      encoding: 'base64',
-      success: (result) => {
-        const lower = filePath.toLowerCase()
-        const mime = lower.indexOf('.png') >= 0 ? 'image/png' : 'image/jpeg'
-        const imageUrl = `data:${mime};base64,${result.data}`
-        if (imageUrl.length > MAX_GIFT_IMAGE_DATA_URL_LENGTH) {
-          wx.showToast({ title: '图片太大，请先裁剪压缩', icon: 'none' })
-          return
+  async compressAndSetGiftImage(filePath, knownSize) {
+    this.setData({ imageCompressing: true })
+    wx.showLoading({ title: '压缩照片...' })
+    try {
+      const imageUrl = await this.prepareGiftImageDataUrl(filePath, knownSize)
+      wx.hideLoading()
+      this.setData({ 'giftDraft.imageUrl': imageUrl })
+      wx.showToast({ title: '照片已压缩', icon: 'success' })
+    } catch (err) {
+      wx.hideLoading()
+      wx.showToast({ title: err.message || '图片压缩失败', icon: 'none' })
+    } finally {
+      this.setData({ imageCompressing: false })
+    }
+  },
+
+  async prepareGiftImageDataUrl(filePath, knownSize) {
+    const originalSize = knownSize || await this.getGiftImageFileSize(filePath)
+    if (originalSize > 0 && originalSize <= MAX_GIFT_IMAGE_BYTES) {
+      return this.readGiftImage(filePath)
+    }
+
+    const nativeCompressed = await this.tryNativeGiftImageCompression(filePath)
+    if (nativeCompressed) return nativeCompressed
+
+    const imageInfo = await this.getGiftImageInfo(filePath, originalSize)
+    const attempts = makeGiftImageCompressionPlan(imageInfo)
+    for (let index = 0; index < attempts.length; index += 1) {
+      const attempt = attempts[index]
+      const tempFilePath = await this.drawGiftImageToCanvas(filePath, attempt)
+      const size = await this.getGiftImageFileSize(tempFilePath)
+      if (size > 0 && size <= MAX_GIFT_IMAGE_BYTES) {
+        return this.readGiftImage(tempFilePath, JPEG_DATA_URL_PREFIX)
+      }
+    }
+
+    throw new Error('压缩后仍超过 200KB，请换一张图')
+  },
+
+  async tryNativeGiftImageCompression(filePath) {
+    if (!wx.compressImage) return ''
+    const qualities = [70, 55, 40, 30]
+    for (let index = 0; index < qualities.length; index += 1) {
+      try {
+        const tempFilePath = await this.compressGiftImage(filePath, qualities[index])
+        const size = await this.getGiftImageFileSize(tempFilePath)
+        if (size > 0 && size <= MAX_GIFT_IMAGE_BYTES) {
+          return this.readGiftImage(tempFilePath)
         }
-        this.setData({ 'giftDraft.imageUrl': imageUrl })
-      },
-      fail: () => wx.showToast({ title: '读取图片失败', icon: 'none' }),
+      } catch (err) {
+        // Continue with the canvas fallback.
+      }
+    }
+    return ''
+  },
+
+  compressGiftImage(filePath, quality) {
+    return new Promise((resolve, reject) => {
+      wx.compressImage({
+        src: filePath,
+        quality,
+        success: (result) => resolve(result.tempFilePath || filePath),
+        fail: reject,
+      })
+    })
+  },
+
+  getGiftImageFileSize(filePath) {
+    return new Promise((resolve) => {
+      if (!wx.getFileInfo) {
+        resolve(0)
+        return
+      }
+      wx.getFileInfo({
+        filePath,
+        success: (result) => resolve(Number(result.size || 0)),
+        fail: () => resolve(0),
+      })
+    })
+  },
+
+  getGiftImageInfo(filePath, size) {
+    return new Promise((resolve, reject) => {
+      wx.getImageInfo({
+        src: filePath,
+        success: (result) => resolve({
+          width: result.width,
+          height: result.height,
+          size: size || 0,
+        }),
+        fail: reject,
+      })
+    })
+  },
+
+  waitGiftCanvasReady(width, height) {
+    return new Promise((resolve) => {
+      this.setData({ giftCanvasWidth: width, giftCanvasHeight: height })
+      if (wx.nextTick) {
+        wx.nextTick(resolve)
+        return
+      }
+      setTimeout(resolve, 30)
+    })
+  },
+
+  async drawGiftImageToCanvas(filePath, attempt) {
+    await this.waitGiftCanvasReady(attempt.width, attempt.height)
+    return new Promise((resolve, reject) => {
+      const ctx = wx.createCanvasContext('giftImageCanvas', this)
+      ctx.drawImage(filePath, 0, 0, attempt.width, attempt.height)
+      ctx.draw(false, () => {
+        wx.canvasToTempFilePath({
+          canvasId: 'giftImageCanvas',
+          fileType: 'jpg',
+          quality: attempt.quality,
+          destWidth: attempt.width,
+          destHeight: attempt.height,
+          success: (result) => resolve(result.tempFilePath),
+          fail: reject,
+        }, this)
+      })
+    })
+  },
+
+  readGiftImage(filePath, dataUrlPrefix) {
+    const fs = wx.getFileSystemManager()
+    return new Promise((resolve, reject) => {
+      fs.readFile({
+        filePath,
+        encoding: 'base64',
+        success: (result) => {
+          const lower = filePath.toLowerCase()
+          const prefix = dataUrlPrefix || (lower.indexOf('.png') >= 0 ? 'data:image/png;base64,' : JPEG_DATA_URL_PREFIX)
+          const imageUrl = `${prefix}${result.data}`
+          if (!isGiftImageDataUrlWithinLimit(imageUrl)) {
+            reject(new Error('礼品照片不能超过 200KB'))
+            return
+          }
+          resolve(imageUrl)
+        },
+        fail: () => reject(new Error('读取图片失败')),
+      })
     })
   },
 
   async saveGift() {
     const draft = this.data.giftDraft
-    if (!draft.title || !draft.imageUrl) {
-      wx.showToast({ title: '名称和照片必填', icon: 'none' })
+    const validationMessage = validateGiftDraft(draft)
+    if (validationMessage) {
+      wx.showToast({ title: validationMessage, icon: 'none' })
       return
     }
-    const payload = {
-      title: draft.title,
-      description: draft.description,
-      imageUrl: draft.imageUrl,
-      pointsCost: Number(draft.pointsCost || 1),
-      stock: Number(draft.stock || 0),
-      active: draft.active,
-    }
+    const payload = buildGiftPayload(draft)
     try {
       if (this.data.editingGiftId) {
         await api.updateGift(this.data.editingGiftId, payload, this.data.session)

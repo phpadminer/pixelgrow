@@ -1,4 +1,9 @@
 <view class="family-page">
+  <canvas
+    canvas-id="giftImageCanvas"
+    class="gift-image-canvas"
+    style="width: {{giftCanvasWidth}}px; height: {{giftCanvasHeight}}px;"
+  ></canvas>
   <view wx:if="{{isLoggedIn}}" class="page-bg">
     <image class="bg-foot bg-chicken-foot" src="/assets/family/chicken-foot.svg" mode="aspectFit" />
     <image class="bg-foot bg-sheep-hoof" src="/assets/family/sheep-hoof.svg" mode="aspectFit" />
@@ -756,23 +761,23 @@
         <button class="ghost-button" bindtap="closeGiftForm">关闭</button>
       </view>
       <view class="field-label">礼品名称</view>
-      <input class="text-input" data-field="title" value="{{giftDraft.title}}" bindinput="onGiftInput" />
+      <input class="text-input" data-field="title" value="{{giftDraft.title}}" bindinput="onGiftInput" bindblur="onGiftInput" />
       <view class="field-label">礼品照片</view>
       <view class="image-picker">
         <image wx:if="{{giftDraft.imageUrl}}" class="gift-preview" src="{{giftDraft.imageUrl}}" mode="aspectFill" />
-        <button class="primary-button image-action" bindtap="chooseGiftImage">选择照片</button>
-        <view class="muted form-note">从手机或电脑里选图，不需要填写网址。</view>
+        <button class="primary-button image-action" loading="{{imageCompressing}}" disabled="{{imageCompressing}}" bindtap="chooseGiftImage">选择照片</button>
+        <view class="muted form-note">从手机或电脑里选图，会自动压缩到 200KB 以内。</view>
       </view>
       <view class="field-label">说明</view>
-      <input class="text-input" data-field="description" value="{{giftDraft.description}}" bindinput="onGiftInput" />
+      <input class="text-input" data-field="description" value="{{giftDraft.description}}" bindinput="onGiftInput" bindblur="onGiftInput" />
       <view class="form-stack">
         <view>
           <view class="field-label">所需积分</view>
-          <input class="text-input" type="number" data-field="pointsCost" value="{{giftDraft.pointsCost}}" bindinput="onGiftInput" />
+          <input class="text-input" type="number" data-field="pointsCost" value="{{giftDraft.pointsCost}}" bindinput="onGiftInput" bindblur="onGiftInput" />
         </view>
         <view>
           <view class="field-label">库存</view>
-          <input class="text-input" type="number" data-field="stock" value="{{giftDraft.stock}}" bindinput="onGiftInput" />
+          <input class="text-input" type="number" data-field="stock" value="{{giftDraft.stock}}" bindinput="onGiftInput" bindblur="onGiftInput" />
         </view>
       </view>
       <label class="switch-line">
