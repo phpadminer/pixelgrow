@@ -666,6 +666,7 @@ Page({
     guestExpiredNotice: false,
     guestNoticeDismissed: false,
     canManagePlan: false,
+    needsFamilySetup: false,
     familySwitcherOpen: false,
     createFamilyFormOpen: false,
     joinFamilyFormOpen: false,
@@ -867,7 +868,7 @@ Page({
       this.applySession(session, {
         selectedChildId: session.childId || '',
       })
-      wx.showToast({ title: session.activeFamily ? '登录成功' : '请选择家庭', icon: 'none' })
+      wx.showToast({ title: session.activeFamily ? '登录成功' : '微信登录成功', icon: 'none' })
       await this.fetchPlan()
       await this.maybeOfferGuestPlanSave(pendingGuestPlan)
     } catch (err) {
@@ -1360,6 +1361,7 @@ Page({
     const historyAgenda = buildHistoryAgenda(state.today, source, selectedChildId)
     const historyCategoryStats = summarizeCategory(historyAgenda)
     const historySummary = summarizeHistoryTrend(historyTrend)
+    const needsFamilySetup = role === 'parent' && Boolean(state.account) && !state.activeFamily
     const canManagePlan = role === 'parent' ? Boolean(state.activeFamily) : role === 'guest'
     this.setData(Object.assign({}, patch, {
       tabs,
@@ -1370,6 +1372,7 @@ Page({
       isParent: role === 'parent',
       isChild: role === 'child',
       canManagePlan,
+      needsFamilySetup,
       selectedChildId,
       selectedChild,
       selectedChildPoints: selectedChild ? Number(selectedChild.points || 0) : 0,

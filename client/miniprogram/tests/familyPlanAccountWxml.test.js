@@ -10,6 +10,21 @@ assert(
 )
 
 assert(
+  wxml.includes('wx:if="{{needsFamilySetup}}"') && wxml.includes('微信登录已完成'),
+  'logged-in users without a family should see a clear post-login family setup state'
+)
+
+assert(
+  wxml.includes('不需要手机号、头像或昵称授权'),
+  'post-login family setup copy should explain WeChat login does not require profile or phone authorization'
+)
+
+assert(
+  wxml.includes('<block wx:else>') && wxml.includes('今天要完成'),
+  'today agenda should be hidden behind the family setup state until a family is selected'
+)
+
+assert(
   wxml.includes('家庭模式'),
   'login sheet should clearly label persistent family mode'
 )

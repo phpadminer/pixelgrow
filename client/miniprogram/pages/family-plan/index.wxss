@@ -2199,6 +2199,21 @@ picker {
   align-items: stretch;
 }
 
+.family-setup-card {
+  align-items: center;
+}
+
+.family-setup-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.family-setup-card .agenda-title {
+  margin: 8rpx 0;
+  font-size: 42rpx;
+  line-height: 1.18;
+}
+
 .invite-box {
   margin-top: 18rpx;
   padding: 22rpx;

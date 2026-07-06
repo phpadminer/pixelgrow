@@ -80,29 +80,11 @@
       </view>
 
       <view class="tab-content" wx:if="{{activeTab === 'today'}}">
-        <view class="focus-card">
-          <view>
-            <view class="muted strong">专注时间 · 番茄钟</view>
-            <view class="focus-time">{{defaultFocusDisplay}}</view>
-            <view class="focus-edit-row">
-              <view class="focus-edit-field">
-                <view class="mini-label">专注</view>
-                <input class="mini-input" type="number" data-field="defaultFocusMinutes" value="{{defaultFocusMinutes}}" bindinput="onDefaultTimerInput" />
-              </view>
-              <view class="focus-edit-field">
-                <view class="mini-label">休息</view>
-                <input class="mini-input" type="number" data-field="defaultBreakMinutes" value="{{defaultBreakMinutes}}" bindinput="onDefaultTimerInput" />
-              </view>
-            </view>
-            <view class="muted">默认番茄钟，任务里可以单独设置。</view>
-          </view>
-          <button class="primary-button compact" bindtap="openTimer">开始专注</button>
-        </view>
-
-        <view wx:if="{{isParent && account && !activeFamily}}" class="focus-card family-empty-card">
-          <view>
-            <view class="muted strong">还没有家庭</view>
-            <view class="agenda-title">先创建家庭，或输入邀请码加入别人家庭。</view>
+        <view wx:if="{{needsFamilySetup}}" class="focus-card family-empty-card family-setup-card">
+          <view class="family-setup-main">
+            <view class="muted strong">微信登录已完成</view>
+            <view class="agenda-title">还没有家庭</view>
+            <view class="muted">微信登录只用于绑定账号，不需要手机号、头像或昵称授权。下一步创建家庭，或输入邀请码加入别人家庭。</view>
           </view>
           <view class="family-actions inline">
             <button class="secondary-button" bindtap="openJoinFamilyForm">加入家庭</button>
@@ -110,72 +92,93 @@
           </view>
         </view>
 
-        <view class="quick-actions" wx:if="{{canManagePlan}}">
-          <view class="quick-card course" data-kind="courses" bindtap="openItemForm">＋ 加课程</view>
-          <view class="quick-card habit" data-kind="habits" bindtap="openItemForm">✓ 加习惯</view>
-          <view class="quick-card task" data-kind="tasks" bindtap="openItemForm">▣ 加任务</view>
-          <view class="quick-card milestone" data-kind="milestones" bindtap="openItemForm">◷ 倒计时</view>
-        </view>
-
-        <view class="course-summary" wx:if="{{canManagePlan && courseSummary.length > 0}}">
-          <view class="section-head course-summary-head">
+        <block wx:else>
+          <view class="focus-card">
             <view>
-              <view class="section-title">课程汇总</view>
-              <view class="muted">日期选错后，点课程修改周期和上课时间</view>
+              <view class="muted strong">专注时间 · 番茄钟</view>
+              <view class="focus-time">{{defaultFocusDisplay}}</view>
+              <view class="focus-edit-row">
+                <view class="focus-edit-field">
+                  <view class="mini-label">专注</view>
+                  <input class="mini-input" type="number" data-field="defaultFocusMinutes" value="{{defaultFocusMinutes}}" bindinput="onDefaultTimerInput" />
+                </view>
+                <view class="focus-edit-field">
+                  <view class="mini-label">休息</view>
+                  <input class="mini-input" type="number" data-field="defaultBreakMinutes" value="{{defaultBreakMinutes}}" bindinput="onDefaultTimerInput" />
+                </view>
+              </view>
+              <view class="muted">默认番茄钟，任务里可以单独设置。</view>
             </view>
+            <button class="primary-button compact" bindtap="openTimer">开始专注</button>
           </view>
-          <view
-            wx:for="{{courseSummary}}"
-            wx:key="id"
-            class="course-summary-row"
-            data-id="{{item.id}}"
-            bindtap="openCourseFromSummary"
-          >
-            <view class="course-summary-main">
-              <view class="course-summary-title">{{item.title}}</view>
-              <view class="muted">{{item.teacher}} · {{item.durationText}} · {{item.rewardText}}</view>
-              <view class="course-summary-stats">{{item.lessonStatsText}}</view>
-              <view class="course-summary-life">{{item.lessonCompletionText}}</view>
-              <view class="course-summary-schedule">{{item.scheduleText}}</view>
-              <view class="course-summary-life">周期：{{item.lifecycleText}}</view>
-            </view>
-            <view class="course-summary-edit">修改</view>
-          </view>
-        </view>
 
-        <view class="section-head">
-          <view>
-            <view class="section-title">今天要完成</view>
-            <view class="muted">按顺序完成，专注一项就够</view>
+          <view class="quick-actions" wx:if="{{canManagePlan}}">
+            <view class="quick-card course" data-kind="courses" bindtap="openItemForm">＋ 加课程</view>
+            <view class="quick-card habit" data-kind="habits" bindtap="openItemForm">✓ 加习惯</view>
+            <view class="quick-card task" data-kind="tasks" bindtap="openItemForm">▣ 加任务</view>
+            <view class="quick-card milestone" data-kind="milestones" bindtap="openItemForm">◷ 倒计时</view>
           </view>
-        </view>
 
-        <view class="empty-card" wx:if="{{todayAgenda.length === 0}}">今天还没有安排。</view>
-        <view
-          wx:for="{{todayAgenda}}"
-          wx:key="id"
-          class="agenda-card {{item.className}} {{item.completed ? 'done' : ''}}"
-          data-id="{{item.id}}"
-          bindtap="openEditItem"
-        >
-          <view class="agenda-time">{{item.time}}</view>
-          <view class="agenda-icon">{{item.category === 'course' ? '书' : item.category === 'habit' ? '✓' : item.category === 'task' ? '夹' : 'D'}}</view>
-          <view class="agenda-main">
-            <view class="agenda-title-row">
-              <view class="agenda-title">{{item.title}}</view>
+          <view class="course-summary" wx:if="{{canManagePlan && courseSummary.length > 0}}">
+            <view class="section-head course-summary-head">
+              <view>
+                <view class="section-title">课程汇总</view>
+                <view class="muted">日期选错后，点课程修改周期和上课时间</view>
+              </view>
             </view>
-            <view class="muted">{{item.meta}} · {{item.focusLabel || item.label}}</view>
-            <view class="reward-line">{{item.category === 'milestone' ? item.meta : item.successRule}}</view>
-          </view>
-          <view class="agenda-actions">
-            <button
-              wx:if="{{item.category !== 'milestone'}}"
-              class="agenda-action-button {{item.completed ? 'checked' : ''}} {{item.pendingCompletion ? 'pending' : ''}} {{item.isMakeup ? 'makeup' : ''}} {{!item.canToggleCompletion ? 'disabled' : ''}}"
+            <view
+              wx:for="{{courseSummary}}"
+              wx:key="id"
+              class="course-summary-row"
               data-id="{{item.id}}"
-              catchtap="toggleCompletion"
-            >{{item.actionText}}</button>
+              bindtap="openCourseFromSummary"
+            >
+              <view class="course-summary-main">
+                <view class="course-summary-title">{{item.title}}</view>
+                <view class="muted">{{item.teacher}} · {{item.durationText}} · {{item.rewardText}}</view>
+                <view class="course-summary-stats">{{item.lessonStatsText}}</view>
+                <view class="course-summary-life">{{item.lessonCompletionText}}</view>
+                <view class="course-summary-schedule">{{item.scheduleText}}</view>
+                <view class="course-summary-life">周期：{{item.lifecycleText}}</view>
+              </view>
+              <view class="course-summary-edit">修改</view>
+            </view>
           </view>
-        </view>
+
+          <view class="section-head">
+            <view>
+              <view class="section-title">今天要完成</view>
+              <view class="muted">按顺序完成，专注一项就够</view>
+            </view>
+          </view>
+
+          <view class="empty-card" wx:if="{{todayAgenda.length === 0}}">今天还没有安排。</view>
+          <view
+            wx:for="{{todayAgenda}}"
+            wx:key="id"
+            class="agenda-card {{item.className}} {{item.completed ? 'done' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="openEditItem"
+          >
+            <view class="agenda-time">{{item.time}}</view>
+            <view class="agenda-icon">{{item.category === 'course' ? '书' : item.category === 'habit' ? '✓' : item.category === 'task' ? '夹' : 'D'}}</view>
+            <view class="agenda-main">
+              <view class="agenda-title-row">
+                <view class="agenda-title">{{item.title}}</view>
+              </view>
+              <view class="muted">{{item.meta}} · {{item.focusLabel || item.label}}</view>
+              <view class="reward-line">{{item.category === 'milestone' ? item.meta : item.successRule}}</view>
+            </view>
+            <view class="agenda-actions">
+              <button
+                wx:if="{{item.category !== 'milestone'}}"
+                class="agenda-action-button {{item.completed ? 'checked' : ''}} {{item.pendingCompletion ? 'pending' : ''}} {{item.isMakeup ? 'makeup' : ''}} {{!item.canToggleCompletion ? 'disabled' : ''}}"
+                data-id="{{item.id}}"
+                catchtap="toggleCompletion"
+              >{{item.actionText}}</button>
+            </view>
+          </view>
+        </block>
       </view>
 
       <view class="tab-content" wx:elif="{{activeTab === 'calendar'}}">
