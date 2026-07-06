@@ -1134,6 +1134,35 @@ Page({
     }
   },
 
+  async ensureActiveFamilySession() {
+    const session = this.data.session
+    if (!session || session.role !== 'parent' || session.familyKey) return false
+    const result = await api.listFamilies(session)
+    const families = result.families || []
+    const activeFamily = result.activeFamily || families[0] || this.data.activeFamily || getActiveFamily(session)
+    if (!activeFamily) {
+      const nextSession = Object.assign({}, session, {
+        families,
+        activeFamily: null,
+        familyId: '',
+        familyKey: '',
+      })
+      wx.setStorageSync(SESSION_KEY, nextSession)
+      this.setData({
+        session: nextSession,
+        families,
+        activeFamily: null,
+        familyTitle: getFamilyTitle(nextSession),
+      })
+      return false
+    }
+    const familyIdentity = activeFamily.familyId || activeFamily.id || activeFamily.familyKey
+    if (!familyIdentity) return false
+    const switchedSession = await api.switchFamily(familyIdentity, session)
+    this.applySession(switchedSession)
+    return true
+  },
+
   async loadFamilies() {
     if (!this.data.session || !this.data.account) return
     const result = await api.listFamilies(this.data.session)
@@ -1300,6 +1329,7 @@ Page({
           wx.showToast({ title: '游客数据已过期，已重置', icon: 'none' })
         }
       } else {
+        await this.ensureActiveFamilySession()
         plan = await api.loadPlan(this.data.session)
       }
       const children = (plan.children || []).map((child) => Object.assign({}, child, {
