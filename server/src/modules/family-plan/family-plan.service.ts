@@ -1328,6 +1328,16 @@ export class FamilyPlanService {
     return { deleted: true, id }
   }
 
+  async deleteGift(id: string, familyKey = DEFAULT_FAMILY_KEY, authorization?: string) {
+    this.assertParentIfAuthenticated(authorization)
+    const resolvedFamilyKey = this.resolveFamilyKey(familyKey, authorization)
+    const result = await this.prisma.familyPlanGift.deleteMany({ where: { id, familyKey: resolvedFamilyKey } })
+    if (result.count === 0) {
+      throw new NotFoundException('礼品不存在')
+    }
+    return { deleted: true, id }
+  }
+
   async deleteRule(id: string, familyKey = DEFAULT_FAMILY_KEY, authorization?: string) {
     this.assertParentIfAuthenticated(authorization)
     const resolvedFamilyKey = this.resolveFamilyKey(familyKey, authorization)

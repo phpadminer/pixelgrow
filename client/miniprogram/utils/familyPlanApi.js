@@ -97,6 +97,15 @@ function updateGift(id, payload, session) {
   )
 }
 
+function deleteGift(id, session) {
+  const familyKey = getSessionFamilyKey(session)
+  return request.del(
+    `/family-plan/gifts/${encodeURIComponent(id)}?familyKey=${encodeURIComponent(familyKey)}`,
+    {},
+    getAuthOptions(session)
+  )
+}
+
 function createRedemption(payload, session) {
   return request.post(
     '/family-plan/redemptions',
@@ -159,6 +168,7 @@ module.exports = {
   deletePlanItem,
   createGift,
   updateGift,
+  deleteGift,
   createRedemption,
   updateRedemptionStatus,
   createRule,

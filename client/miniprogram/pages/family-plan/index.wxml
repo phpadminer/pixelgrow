@@ -878,7 +878,10 @@
       <label class="switch-line">
         <switch checked="{{giftDraft.active}}" color="#f5a316" bindchange="onGiftActiveChange" /> 上架，孩子可以申请兑换
       </label>
-      <button class="primary-button" bindtap="saveGift">保存礼品</button>
+      <view class="sheet-actions">
+        <button wx:if="{{editingGiftId}}" class="danger-button" bindtap="deleteEditingGift">删除礼品</button>
+        <button class="primary-button" bindtap="saveGift">保存礼品</button>
+      </view>
     </view>
   </view>
 

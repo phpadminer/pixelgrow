@@ -2328,6 +2328,34 @@ Page({
     }
   },
 
+  deleteEditingGift() {
+    if ((!this.data.isParent && !this.data.isGuest) || !this.data.editingGiftId) return
+    wx.showModal({
+      title: '删除礼品',
+      content: '删除后礼品中心不再显示，历史兑换记录会保留。',
+      confirmText: '删除',
+      confirmColor: '#c35d12',
+      success: async (res) => {
+        if (!res.confirm) return
+        try {
+          if (this.data.isGuest) {
+            const gifts = deleteGuestPlanItem(this.data.gifts, this.data.editingGiftId)
+            wx.showToast({ title: '已删除临时礼品', icon: 'none' })
+            this.setData({ giftFormOpen: false, editingGiftId: '' })
+            this.refreshGuestPlan({ gifts })
+            return
+          }
+          await api.deleteGift(this.data.editingGiftId, this.data.session)
+          wx.showToast({ title: '礼品已删除', icon: 'success' })
+          this.setData({ giftFormOpen: false, editingGiftId: '' })
+          await this.fetchPlan()
+        } catch (err) {
+          this.showError(err, '删除失败')
+        }
+      },
+    })
+  },
+
   requestGift(event) {
     const giftId = event.currentTarget.dataset.id
     const gift = this.data.gifts.find((item) => item.id === giftId)

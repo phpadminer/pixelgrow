@@ -177,6 +177,11 @@ export class FamilyPlanController {
     return this.familyPlanService.deleteMilestone(id, familyKey, authorization)
   }
 
+  @Delete('gifts/:id')
+  deleteGift(@Param('id') id: string, @Query('familyKey') familyKey?: string, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.deleteGift(id, familyKey, authorization)
+  }
+
   @Delete('rules/:id')
   deleteRule(@Param('id') id: string, @Query('familyKey') familyKey?: string, @Headers('authorization') authorization?: string) {
     return this.familyPlanService.deleteRule(id, familyKey, authorization)

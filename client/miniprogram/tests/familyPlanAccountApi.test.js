@@ -63,6 +63,14 @@ async function run() {
 
   await api.createPlanItem('tasks', { title: '任务' }, session)
   assert.strictEqual(calls.pop().data.familyKey, 'family-a')
+
+  await api.deleteGift('gift-1', session)
+  assert.deepStrictEqual(calls.pop(), {
+    method: 'DELETE',
+    url: '/family-plan/gifts/gift-1?familyKey=family-a',
+    data: {},
+    options: { header: { Authorization: 'Bearer token-1' }, skipAuth: true },
+  })
 }
 
 run().then(() => console.log('familyPlanAccountApi tests passed'))

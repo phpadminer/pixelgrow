@@ -102,6 +102,11 @@ assert(
 )
 
 assert(
+  wxml.includes('bindtap="deleteEditingGift"') && wxml.includes('删除礼品'),
+  'gift editor should expose gift deletion when editing an existing gift'
+)
+
+assert(
   wxml.includes('wx:if="{{canManagePlan}}" class="primary-button compact" bindtap="openRuleForm"'),
   'guest temporary family should expose rule management'
 )
