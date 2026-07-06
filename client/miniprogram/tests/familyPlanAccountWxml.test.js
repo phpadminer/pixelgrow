@@ -20,6 +20,21 @@ assert(
 )
 
 assert(
+  !wxml.includes('bindtap="switchLoginRole"') && !wxml.includes('data-role="child"'),
+  'main login sheet should not expose a child login role switch'
+)
+
+assert(
+  !wxml.includes('data-field="childCode"') && !wxml.includes('data-field="pinCode"'),
+  'main login sheet should not expose child code or PIN fields'
+)
+
+assert(
+  !wxml.includes('孩子 GEGE01') && !wxml.includes('MEIMEI01 / 2580'),
+  'main login helper should not mix child audit accounts into the public login flow'
+)
+
+assert(
   wxml.includes('数据临时'),
   'guest mode copy should make temporary data explicit'
 )
