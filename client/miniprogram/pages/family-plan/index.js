@@ -1646,7 +1646,7 @@ Page({
       }
     }
 
-    throw new Error('压缩后仍超过 200KB，请换一张图')
+    throw new Error('压缩后仍超过 200K，请换一张图')
   },
 
   async tryNativeGiftImageCompression(filePath) {
@@ -1746,7 +1746,7 @@ Page({
           const prefix = dataUrlPrefix || (lower.indexOf('.png') >= 0 ? 'data:image/png;base64,' : JPEG_DATA_URL_PREFIX)
           const imageUrl = `${prefix}${result.data}`
           if (!isGiftImageDataUrlWithinLimit(imageUrl)) {
-            reject(new Error('礼品照片不能超过 200KB'))
+            reject(new Error('礼品照片不能超过 200K'))
             return
           }
           resolve(imageUrl)

@@ -25,7 +25,7 @@ const DEFAULT_FAMILY_KEY = 'demo-family'
 const PARENT_DEMO_CODE = '123456'
 const TOKEN_SECRET = process.env.FAMILY_PLAN_TOKEN_SECRET || 'family-plan-dev-secret'
 const SEED_MODES = ['demo', 'starter', 'off'] as const
-const MAX_INLINE_GIFT_IMAGE_BYTES = 200 * 1024
+const MAX_INLINE_GIFT_IMAGE_LENGTH = 200000
 
 type FamilyPlanSeedMode = typeof SEED_MODES[number]
 
@@ -41,28 +41,17 @@ function isInlineImageUrl(imageUrl?: string | null) {
   return Boolean(imageUrl && imageUrl.startsWith('data:image/'))
 }
 
-function getBase64ByteLength(base64: string) {
-  const normalized = base64.replace(/\s/g, '')
-  const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0
-  return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding)
-}
-
-function getInlineImageByteLength(imageUrl: string) {
-  const commaIndex = imageUrl.indexOf(',')
-  return getBase64ByteLength(commaIndex >= 0 ? imageUrl.slice(commaIndex + 1) : imageUrl)
-}
-
 function normalizeGiftImageUrl(imageUrl?: string | null) {
   if (!imageUrl) return ''
-  if (isInlineImageUrl(imageUrl) && getInlineImageByteLength(imageUrl) > MAX_INLINE_GIFT_IMAGE_BYTES) {
+  if (isInlineImageUrl(imageUrl) && imageUrl.length > MAX_INLINE_GIFT_IMAGE_LENGTH) {
     return ''
   }
   return imageUrl
 }
 
 function assertGiftImageUrl(imageUrl: string) {
-  if (isInlineImageUrl(imageUrl) && getInlineImageByteLength(imageUrl) > MAX_INLINE_GIFT_IMAGE_BYTES) {
-    throw new BadRequestException('礼品图片太大，请先压缩到 200KB 以内')
+  if (isInlineImageUrl(imageUrl) && imageUrl.length > MAX_INLINE_GIFT_IMAGE_LENGTH) {
+    throw new BadRequestException('礼品图片太大，请先压缩到 200K 以内')
   }
 }
 

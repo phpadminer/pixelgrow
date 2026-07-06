@@ -277,7 +277,7 @@ export class CreateFamilyPlanGiftDto extends FamilyKeyDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(280000)
+  @MaxLength(200000)
   imageUrl: string
 
   @IsInt()

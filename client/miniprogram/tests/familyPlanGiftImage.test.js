@@ -1,6 +1,7 @@
 const assert = require('assert')
 
 const {
+  MAX_GIFT_IMAGE_DATA_URL_LENGTH,
   MAX_GIFT_IMAGE_BYTES,
   buildGiftPayload,
   getDataUrlByteSize,
@@ -13,7 +14,8 @@ function makeDataUrl(byteLength) {
   return `data:image/jpeg;base64,${Buffer.alloc(byteLength).toString('base64')}`
 }
 
-assert.strictEqual(MAX_GIFT_IMAGE_BYTES, 200 * 1024)
+assert.strictEqual(MAX_GIFT_IMAGE_DATA_URL_LENGTH, 200000)
+assert(MAX_GIFT_IMAGE_BYTES < 200 * 1024, 'inline base64 payload must leave room for data URL expansion')
 
 const maxSizeDataUrl = makeDataUrl(MAX_GIFT_IMAGE_BYTES)
 assert.strictEqual(getDataUrlByteSize(maxSizeDataUrl), MAX_GIFT_IMAGE_BYTES)
@@ -53,6 +55,6 @@ assert.strictEqual(
 )
 assert.strictEqual(validateGiftDraft({ title: '', imageUrl: makeDataUrl(1024) }), '礼品名称必填')
 assert.strictEqual(validateGiftDraft({ title: '乐高小车', imageUrl: '' }), '礼品照片必填')
-assert.strictEqual(validateGiftDraft({ title: '乐高小车', imageUrl: makeDataUrl(MAX_GIFT_IMAGE_BYTES + 1) }), '礼品照片不能超过 200KB')
+assert.strictEqual(validateGiftDraft({ title: '乐高小车', imageUrl: makeDataUrl(MAX_GIFT_IMAGE_BYTES + 1) }), '礼品照片不能超过 200K')
 
 console.log('familyPlanGiftImage tests passed')

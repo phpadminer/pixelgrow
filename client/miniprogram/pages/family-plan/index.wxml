@@ -766,7 +766,7 @@
       <view class="image-picker">
         <image wx:if="{{giftDraft.imageUrl}}" class="gift-preview" src="{{giftDraft.imageUrl}}" mode="aspectFill" />
         <button class="primary-button image-action" loading="{{imageCompressing}}" disabled="{{imageCompressing}}" bindtap="chooseGiftImage">选择照片</button>
-        <view class="muted form-note">从手机或电脑里选图，会自动压缩到 200KB 以内。</view>
+        <view class="muted form-note">从手机或电脑里选图，会自动压缩到 200K 以内。</view>
       </view>
       <view class="field-label">说明</view>
       <input class="text-input" data-field="description" value="{{giftDraft.description}}" bindinput="onGiftInput" bindblur="onGiftInput" />

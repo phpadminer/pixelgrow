@@ -1,7 +1,8 @@
-const MAX_GIFT_IMAGE_BYTES = 200 * 1024
+const MAX_GIFT_IMAGE_DATA_URL_LENGTH = 200000
 const MAX_CANVAS_LONG_EDGE = 1280
 const MIN_CANVAS_LONG_EDGE = 320
 const JPEG_DATA_URL_PREFIX = 'data:image/jpeg;base64,'
+const MAX_GIFT_IMAGE_BYTES = Math.floor((MAX_GIFT_IMAGE_DATA_URL_LENGTH - JPEG_DATA_URL_PREFIX.length) * 3 / 4)
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
@@ -22,7 +23,10 @@ function getDataUrlByteSize(dataUrl) {
 }
 
 function isGiftImageDataUrlWithinLimit(dataUrl, maxBytes = MAX_GIFT_IMAGE_BYTES) {
-  return getDataUrlByteSize(dataUrl) <= maxBytes
+  if (maxBytes !== MAX_GIFT_IMAGE_BYTES) {
+    return getDataUrlByteSize(dataUrl) <= maxBytes
+  }
+  return String(dataUrl || '').length <= MAX_GIFT_IMAGE_DATA_URL_LENGTH
 }
 
 function makeGiftImageCompressionPlan(imageInfo = {}) {
@@ -77,7 +81,7 @@ function validateGiftDraft(draft = {}) {
   const imageUrl = String(draft.imageUrl || '').trim()
   if (!imageUrl) return '礼品照片必填'
   if (imageUrl.startsWith('data:image/') && !isGiftImageDataUrlWithinLimit(imageUrl)) {
-    return '礼品照片不能超过 200KB'
+    return '礼品照片不能超过 200K'
   }
 
   if (normalizeGiftNumber(draft.pointsCost, 0) < 1) return '兑换积分至少 1 分'
@@ -99,6 +103,7 @@ function buildGiftPayload(draft = {}) {
 module.exports = {
   JPEG_DATA_URL_PREFIX,
   MAX_GIFT_IMAGE_BYTES,
+  MAX_GIFT_IMAGE_DATA_URL_LENGTH,
   buildGiftPayload,
   getDataUrlByteSize,
   isGiftImageDataUrlWithinLimit,
