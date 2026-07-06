@@ -1064,13 +1064,30 @@ Page({
 
     const itemIdMap = {}
     const giftIdMap = {}
+    const makeImportKey = (...parts) => parts
+      .map((part) => String(part === undefined || part === null ? '' : part).trim().replace(/\s+/g, ' '))
+      .join('|')
+    const findExistingImportItem = (items, targetKey, makeKey) => (items || []).find((item) => makeKey(item) === targetKey) || null
+    const makeCourseKey = (item) => makeImportKey(item.childId, item.subject, item.teacher, item.startDate, item.settlementDate, item.weekday, item.time, item.durationMinutes)
+    const makeHabitKey = (item) => makeImportKey(item.childId, item.title, item.frequency)
+    const makeTaskKey = (item) => makeImportKey(item.childId, item.title, item.dueDate, item.time)
+    const makeMilestoneKey = (item) => makeImportKey(item.title, item.date)
+    const makeGiftKey = (item) => makeImportKey(item.title, item.description, item.pointsCost)
+    const makeRuleKey = (item) => makeImportKey(item.childId, item.title, item.body)
     const createChildItems = async (kind, prefix, items) => {
+      const existingItems = this.data[kind] || []
+      const makeKey = prefix === 'course' ? makeCourseKey : prefix === 'habit' ? makeHabitKey : makeTaskKey
       for (let index = 0; index < (items || []).length; index += 1) {
         const item = items[index]
         const childId = resolveChildId(item.childId)
         if (!childId) continue
         const payload = Object.assign({}, item, { childId })
         delete payload.id
+        const existingItem = findExistingImportItem(existingItems, makeKey(payload), makeKey)
+        if (existingItem) {
+          itemIdMap[`${prefix}:${item.id}`] = existingItem.id
+          continue
+        }
         const created = await api.createPlanItem(kind, payload, session)
         itemIdMap[`${prefix}:${item.id}`] = created.id
       }
@@ -1082,6 +1099,8 @@ Page({
 
     for (let index = 0; index < (plan.milestones || []).length; index += 1) {
       const item = plan.milestones[index]
+      const existingMilestone = findExistingImportItem(this.data.milestones, makeMilestoneKey(item), makeMilestoneKey)
+      if (existingMilestone) continue
       await api.createPlanItem('milestones', {
         title: item.title,
         date: item.date,
@@ -1090,6 +1109,11 @@ Page({
 
     for (let index = 0; index < (plan.gifts || []).length; index += 1) {
       const item = plan.gifts[index]
+      const existingGift = findExistingImportItem(this.data.gifts, makeGiftKey(item), makeGiftKey)
+      if (existingGift) {
+        giftIdMap[item.id] = existingGift.id
+        continue
+      }
       const created = await api.createGift({
         title: item.title,
         description: item.description || '',
@@ -1103,11 +1127,14 @@ Page({
 
     for (let index = 0; index < (plan.rules || []).length; index += 1) {
       const item = plan.rules[index]
-      await api.createRule({
+      const payload = {
         title: item.title,
         body: item.body,
         childId: item.childId ? resolveChildId(item.childId) : '',
-      }, session)
+      }
+      const existingRule = findExistingImportItem(this.data.rules, makeRuleKey(payload), makeRuleKey)
+      if (existingRule) continue
+      await api.createRule(payload, session)
     }
 
     const completionEntries = Object.keys(plan.completions || {})
