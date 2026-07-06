@@ -74,6 +74,23 @@ assert(
   'guest users should see temporary account expiry and deletion warning'
 )
 
+const guestCardIndex = wxml.indexOf('class="guest-expiry-card"')
+const todayTabIndex = wxml.indexOf('class="tab-content" wx:if="{{activeTab === \'today\'}}"')
+assert(
+  guestCardIndex >= 0 && todayTabIndex >= 0 && guestCardIndex < todayTabIndex,
+  'guest expiry card should sit at the top of the page, not inside the today tab'
+)
+
+assert(
+  wxml.includes('bindtap="dismissGuestExpiryCard"') && wxml.includes('guestNoticeDismissed'),
+  'guest expiry card should be dismissible'
+)
+
+assert(
+  wxml.includes('>登录保存</button>') && !wxml.includes('>保存到家庭</button>'),
+  'guest save button text should be short enough to avoid wrapping'
+)
+
 assert(
   wxml.includes('wx:if="{{canManagePlan}}"') && wxml.includes('data-kind="courses" bindtap="openItemForm">＋ 加课程'),
   'guest temporary family should expose the same plan creation entry points'

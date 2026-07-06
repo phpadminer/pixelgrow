@@ -40,6 +40,16 @@
         </view>
       </view>
 
+      <view wx:if="{{isGuest && !guestNoticeDismissed}}" class="guest-expiry-card">
+        <button class="guest-expiry-close" bindtap="dismissGuestExpiryCard" aria-label="关闭">×</button>
+        <view class="guest-expiry-main">
+          <view class="muted strong">游客模式 · 数据临时</view>
+          <view class="agenda-title">{{guestExpiryText}}</view>
+          <view class="muted">3 天后自动清空。微信登录并保存到家庭后，可长期保留。</view>
+        </view>
+        <button class="primary-button compact guest-save-button" bindtap="openLoginForm">登录保存</button>
+      </view>
+
       <view class="children-row" wx:if="{{activeTab !== 'notifications' && children.length > 1}}">
         <view
           wx:for="{{children}}"
@@ -70,15 +80,6 @@
       </view>
 
       <view class="tab-content" wx:if="{{activeTab === 'today'}}">
-        <view wx:if="{{isGuest}}" class="guest-expiry-card">
-          <view>
-            <view class="muted strong">游客模式 · 数据临时</view>
-            <view class="agenda-title">{{guestExpiryText}}</view>
-            <view class="muted">3 天后自动清空。微信登录并保存到家庭后，可长期保留。</view>
-          </view>
-          <button class="primary-button compact" bindtap="openLoginForm">保存到家庭</button>
-        </view>
-
         <view class="focus-card">
           <view>
             <view class="muted strong">专注时间 · 番茄钟</view>

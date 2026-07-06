@@ -47,6 +47,7 @@ const {
 const SESSION_KEY = 'familyPlanSession'
 const GUEST_SESSION_KEY = 'familyPlanGuestSession'
 const GUEST_PLAN_KEY = 'familyPlanGuestPlan'
+const GUEST_NOTICE_DISMISSED_KEY = 'familyPlanGuestNoticeDismissed'
 const WEEKDAY_VALUES = [0, 1, 2, 3, 4, 5, 6]
 const WEEKDAY_LABELS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三']
@@ -663,6 +664,7 @@ Page({
     guestSession: null,
     guestExpiryText: '',
     guestExpiredNotice: false,
+    guestNoticeDismissed: false,
     canManagePlan: false,
     familySwitcherOpen: false,
     createFamilyFormOpen: false,
@@ -790,6 +792,7 @@ Page({
       selectedDate: today,
       selectedDateLabel: shortDate(today),
       itemDraft: defaultItemDraft(today),
+      guestNoticeDismissed: Boolean(wx.getStorageSync(GUEST_NOTICE_DISMISSED_KEY)),
       customNavPadding: getCustomNavPadding(),
     })
     this.fetchPlan()
@@ -932,13 +935,20 @@ Page({
       guestSession = createGuestSession(now)
       wx.setStorageSync(GUEST_SESSION_KEY, guestSession)
       wx.removeStorageSync(GUEST_PLAN_KEY)
+      wx.removeStorageSync(GUEST_NOTICE_DISMISSED_KEY)
     }
     this.setData({
       guestSession,
       guestExpiryText: getGuestExpiryText(guestSession, now),
       guestExpiredNotice: expired,
+      guestNoticeDismissed: expired ? false : Boolean(wx.getStorageSync(GUEST_NOTICE_DISMISSED_KEY)),
     })
     return { guestSession, expired }
+  },
+
+  dismissGuestExpiryCard() {
+    wx.setStorageSync(GUEST_NOTICE_DISMISSED_KEY, true)
+    this.setData({ guestNoticeDismissed: true })
   },
 
   getStoredGuestPlan() {
@@ -1001,6 +1011,7 @@ Page({
       await this.saveGuestPlanToFamily(guestPlan)
       wx.removeStorageSync(GUEST_PLAN_KEY)
       wx.removeStorageSync(GUEST_SESSION_KEY)
+      wx.removeStorageSync(GUEST_NOTICE_DISMISSED_KEY)
       wx.showToast({ title: '已保存到家庭', icon: 'success' })
       await this.fetchPlan()
     } catch (err) {

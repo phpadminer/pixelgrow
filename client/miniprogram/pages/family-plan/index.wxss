@@ -877,14 +877,48 @@ picker {
 }
 
 .guest-expiry-card {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20rpx;
-  padding: 28rpx 30rpx;
+  padding: 28rpx 30rpx 28rpx 30rpx;
   margin-bottom: 24rpx;
   border-color: rgba(245, 163, 22, 0.28);
   background: rgba(255, 247, 222, 0.92);
+}
+
+.guest-expiry-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 22rpx;
+}
+
+.guest-save-button {
+  flex: 0 0 168rpx;
+  min-width: 168rpx;
+  padding: 0 18rpx;
+  white-space: nowrap;
+}
+
+.guest-expiry-close {
+  position: absolute;
+  top: 12rpx;
+  right: 12rpx;
+  z-index: 1;
+  width: 42rpx;
+  height: 42rpx;
+  min-height: 42rpx;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.72);
+  color: #8a6a28;
+  font-size: 28rpx;
+  line-height: 1;
+  font-weight: 900;
 }
 
 .focus-time {
