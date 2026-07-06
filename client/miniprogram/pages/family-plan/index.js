@@ -15,7 +15,16 @@ const {
   summaryLabel,
 } = require('../../utils/familyPlanSummary')
 const { buildNotifications } = require('../../utils/familyPlanNotifications')
-const { addGuestTask, applyGuestCompletion } = require('../../utils/familyPlanGuestMode')
+const {
+  addGuestTask,
+  applyGuestCompletion,
+  createGuestSession,
+  deleteGuestPlanItem,
+  getGuestExpiryText,
+  hasGuestPlanData,
+  isGuestExpired,
+  upsertGuestPlanItem,
+} = require('../../utils/familyPlanGuestMode')
 const {
   JPEG_DATA_URL_PREFIX,
   MAX_GIFT_IMAGE_BYTES,
@@ -36,6 +45,8 @@ const {
 } = require('../../utils/familyPlanCourseSchedule')
 
 const SESSION_KEY = 'familyPlanSession'
+const GUEST_SESSION_KEY = 'familyPlanGuestSession'
+const GUEST_PLAN_KEY = 'familyPlanGuestPlan'
 const WEEKDAY_VALUES = [0, 1, 2, 3, 4, 5, 6]
 const WEEKDAY_LABELS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三']
@@ -649,6 +660,10 @@ Page({
     families: [],
     activeFamily: null,
     familyTitle: '体验家庭',
+    guestSession: null,
+    guestExpiryText: '',
+    guestExpiredNotice: false,
+    canManagePlan: false,
     familySwitcherOpen: false,
     createFamilyFormOpen: false,
     joinFamilyFormOpen: false,
@@ -830,6 +845,7 @@ Page({
   },
 
   async loginWithWechat() {
+    const pendingGuestPlan = this.getStoredGuestPlan()
     this.setData({ loading: true })
     try {
       const code = await new Promise((resolve, reject) => {
@@ -850,6 +866,7 @@ Page({
       })
       wx.showToast({ title: session.activeFamily ? '登录成功' : '请选择家庭', icon: 'none' })
       await this.fetchPlan()
+      await this.maybeOfferGuestPlanSave(pendingGuestPlan)
     } catch (err) {
       this.showError(err, '微信登录失败')
     } finally {
@@ -904,6 +921,178 @@ Page({
       notificationCount: 0,
     })
     this.fetchPlan()
+  },
+
+  getOrCreateGuestSession() {
+    const now = Date.now()
+    let guestSession = wx.getStorageSync(GUEST_SESSION_KEY) || null
+    let expired = false
+    if (isGuestExpired(guestSession, now)) {
+      expired = Boolean(guestSession)
+      guestSession = createGuestSession(now)
+      wx.setStorageSync(GUEST_SESSION_KEY, guestSession)
+      wx.removeStorageSync(GUEST_PLAN_KEY)
+    }
+    this.setData({
+      guestSession,
+      guestExpiryText: getGuestExpiryText(guestSession, now),
+      guestExpiredNotice: expired,
+    })
+    return { guestSession, expired }
+  },
+
+  getStoredGuestPlan() {
+    return wx.getStorageSync(GUEST_PLAN_KEY) || null
+  },
+
+  storeGuestPlan(plan) {
+    wx.setStorageSync(GUEST_PLAN_KEY, {
+      children: plan.children || [],
+      courses: plan.courses || [],
+      habits: plan.habits || [],
+      tasks: plan.tasks || [],
+      milestones: plan.milestones || [],
+      completions: plan.completions || {},
+      gifts: plan.gifts || [],
+      redemptions: plan.redemptions || [],
+      pointLedger: plan.pointLedger || [],
+      rules: plan.rules || [],
+    })
+  },
+
+  currentGuestPlan(patch = {}) {
+    return Object.assign({
+      children: this.data.children || [],
+      courses: this.data.courses || [],
+      habits: this.data.habits || [],
+      tasks: this.data.tasks || [],
+      milestones: this.data.milestones || [],
+      completions: this.data.completions || {},
+      gifts: this.data.gifts || [],
+      redemptions: this.data.redemptions || [],
+      pointLedger: this.data.pointLedger || [],
+      rules: this.data.rules || [],
+    }, patch)
+  },
+
+  refreshGuestPlan(patch) {
+    const plan = this.currentGuestPlan(patch)
+    this.storeGuestPlan(plan)
+    this.refreshView(plan)
+  },
+
+  async maybeOfferGuestPlanSave(pendingGuestPlan) {
+    const guestPlan = pendingGuestPlan || this.getStoredGuestPlan()
+    if (!hasGuestPlanData(guestPlan)) return
+    if (!this.data.session || this.data.session.role !== 'parent' || !this.data.activeFamily) return
+    const confirmed = await new Promise((resolve) => {
+      wx.showModal({
+        title: '保存游客数据',
+        content: '把这 3 天游客体验里的课程、任务、礼品、规则和完成记录保存到当前家庭？保存后游客临时数据会清空。',
+        confirmText: '保存',
+        cancelText: '稍后',
+        success: (res) => resolve(Boolean(res.confirm)),
+        fail: () => resolve(false),
+      })
+    })
+    if (!confirmed) return
+    this.setData({ loading: true })
+    try {
+      await this.saveGuestPlanToFamily(guestPlan)
+      wx.removeStorageSync(GUEST_PLAN_KEY)
+      wx.removeStorageSync(GUEST_SESSION_KEY)
+      wx.showToast({ title: '已保存到家庭', icon: 'success' })
+      await this.fetchPlan()
+    } catch (err) {
+      this.showError(err, '游客数据保存失败')
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  async saveGuestPlanToFamily(plan) {
+    const session = this.data.session
+    const familyChildren = this.data.children || []
+    const fallbackChildId = this.data.selectedChildId || (familyChildren[0] && familyChildren[0].id) || ''
+    const hasFamilyChild = (childId) => familyChildren.some((child) => child.id === childId)
+    const resolveChildId = (childId) => hasFamilyChild(childId) ? childId : fallbackChildId
+    const hasChildBoundItems = ['courses', 'habits', 'tasks'].some((key) => (plan[key] || []).length > 0)
+      || (plan.rules || []).some((item) => item.childId)
+      || (plan.redemptions || []).some((item) => item.childId)
+    if (hasChildBoundItems && !fallbackChildId) {
+      throw new Error('家庭里还没有孩子，先创建孩子后再保存游客数据')
+    }
+
+    const itemIdMap = {}
+    const giftIdMap = {}
+    const createChildItems = async (kind, prefix, items) => {
+      for (let index = 0; index < (items || []).length; index += 1) {
+        const item = items[index]
+        const childId = resolveChildId(item.childId)
+        if (!childId) continue
+        const payload = Object.assign({}, item, { childId })
+        delete payload.id
+        const created = await api.createPlanItem(kind, payload, session)
+        itemIdMap[`${prefix}:${item.id}`] = created.id
+      }
+    }
+
+    await createChildItems('courses', 'course', plan.courses)
+    await createChildItems('habits', 'habit', plan.habits)
+    await createChildItems('tasks', 'task', plan.tasks)
+
+    for (let index = 0; index < (plan.milestones || []).length; index += 1) {
+      const item = plan.milestones[index]
+      await api.createPlanItem('milestones', {
+        title: item.title,
+        date: item.date,
+      }, session)
+    }
+
+    for (let index = 0; index < (plan.gifts || []).length; index += 1) {
+      const item = plan.gifts[index]
+      const created = await api.createGift({
+        title: item.title,
+        description: item.description || '',
+        imageUrl: item.imageUrl || '',
+        pointsCost: Number(item.pointsCost || 0),
+        stock: Number(item.stock || 0),
+        active: item.active !== false,
+      }, session)
+      giftIdMap[item.id] = created.id
+    }
+
+    for (let index = 0; index < (plan.rules || []).length; index += 1) {
+      const item = plan.rules[index]
+      await api.createRule({
+        title: item.title,
+        body: item.body,
+        childId: item.childId ? resolveChildId(item.childId) : '',
+      }, session)
+    }
+
+    const completionEntries = Object.keys(plan.completions || {})
+    for (let index = 0; index < completionEntries.length; index += 1) {
+      const guestKey = completionEntries[index]
+      const completion = normalizeCompletionRecord(plan.completions[guestKey])
+      if (!completion.completed) continue
+      const match = guestKey.match(/^(course|habit|task)-(.+)-(\d{4}-\d{2}-\d{2})$/)
+      if (!match) continue
+      const nextId = itemIdMap[`${match[1]}:${match[2]}`]
+      if (!nextId) continue
+      await api.updateCompletion(`${match[1]}-${nextId}-${match[3]}`, true, session, { isMakeup: completion.isMakeup })
+    }
+
+    for (let index = 0; index < (plan.redemptions || []).length; index += 1) {
+      const item = plan.redemptions[index]
+      const giftId = giftIdMap[item.giftId]
+      const childId = resolveChildId(item.childId)
+      if (!giftId || !childId) continue
+      const created = await api.createRedemption({ giftId, childId }, session)
+      if (item.status === 'approved' || item.status === 'rejected') {
+        await api.updateRedemptionStatus(created.id, item.status, session)
+      }
+    }
   },
 
   async loadFamilies() {
@@ -984,12 +1173,14 @@ Page({
       wx.showToast({ title: '家庭名称必填', icon: 'none' })
       return
     }
+    const pendingGuestPlan = this.getStoredGuestPlan()
     this.setData({ loading: true })
     try {
       const session = await api.createFamily({ name }, this.data.session)
       this.applySession(session)
       wx.showToast({ title: '家庭已创建', icon: 'success' })
       await this.fetchPlan()
+      await this.maybeOfferGuestPlanSave(pendingGuestPlan)
     } catch (err) {
       this.showError(err, '创建家庭失败')
     } finally {
@@ -1003,12 +1194,14 @@ Page({
       wx.showToast({ title: '邀请码必填', icon: 'none' })
       return
     }
+    const pendingGuestPlan = this.getStoredGuestPlan()
     this.setData({ loading: true })
     try {
       const session = await api.joinFamilyByInvite({ inviteCode }, this.data.session)
       this.applySession(session)
       wx.showToast({ title: '已加入家庭', icon: 'success' })
       await this.fetchPlan()
+      await this.maybeOfferGuestPlanSave(pendingGuestPlan)
     } catch (err) {
       this.showError(err, '加入家庭失败')
     } finally {
@@ -1019,12 +1212,14 @@ Page({
   async switchFamily(event) {
     const familyId = event.currentTarget.dataset.id
     if (!familyId) return
+    const pendingGuestPlan = this.getStoredGuestPlan()
     this.setData({ loading: true })
     try {
       const session = await api.switchFamily(familyId, this.data.session)
       this.applySession(session)
       wx.showToast({ title: '已切换家庭', icon: 'success' })
       await this.fetchPlan()
+      await this.maybeOfferGuestPlanSave(pendingGuestPlan)
     } catch (err) {
       this.showError(err, '切换家庭失败')
     } finally {
@@ -1054,7 +1249,20 @@ Page({
   async fetchPlan() {
     this.setData({ loading: true })
     try {
-      const plan = await api.loadPlan(this.data.session)
+      let plan = null
+      if (this.data.isGuest) {
+        const { expired } = this.getOrCreateGuestSession()
+        plan = this.getStoredGuestPlan()
+        if (!plan) {
+          plan = await api.loadPlan(null)
+          this.storeGuestPlan(plan)
+        }
+        if (expired) {
+          wx.showToast({ title: '游客数据已过期，已重置', icon: 'none' })
+        }
+      } else {
+        plan = await api.loadPlan(this.data.session)
+      }
       const children = (plan.children || []).map((child) => Object.assign({}, child, {
         avatarPath: getAvatarPath(child.avatar),
         patternPath: getPatternPath(child.avatar),
@@ -1141,6 +1349,7 @@ Page({
     const historyAgenda = buildHistoryAgenda(state.today, source, selectedChildId)
     const historyCategoryStats = summarizeCategory(historyAgenda)
     const historySummary = summarizeHistoryTrend(historyTrend)
+    const canManagePlan = role === 'parent' ? Boolean(state.activeFamily) : role === 'guest'
     this.setData(Object.assign({}, patch, {
       tabs,
       activeTab,
@@ -1149,6 +1358,7 @@ Page({
       isGuest: role === 'guest',
       isParent: role === 'parent',
       isChild: role === 'child',
+      canManagePlan,
       selectedChildId,
       selectedChild,
       selectedChildPoints: selectedChild ? Number(selectedChild.points || 0) : 0,
@@ -1292,7 +1502,7 @@ Page({
           title: completed ? '体验完成，本地临时' : '已取消体验完成',
           icon: 'none',
         })
-        this.refreshView({ completions })
+        this.refreshGuestPlan({ completions })
         return
       }
       await api.updateCompletion(item.id, completed, this.data.session, { isMakeup: item.isMakeup })
@@ -1309,7 +1519,6 @@ Page({
   openItemForm(event) {
     if (!this.data.isParent && !this.data.isGuest) return
     const kind = event.currentTarget.dataset.kind || 'tasks'
-    if (this.data.isGuest && kind !== 'tasks') return
     if (!this.data.activeFamily) {
       if (!this.data.isGuest) {
         this.openFamilySwitcher()
@@ -1319,7 +1528,7 @@ Page({
     const titleMap = {
       courses: '添加课程',
       habits: '添加习惯',
-      tasks: this.data.isGuest ? '添加临时任务' : '添加任务',
+      tasks: '添加任务',
       milestones: '添加倒计时',
     }
     const labelMap = {
@@ -1371,7 +1580,7 @@ Page({
   },
 
   openEditItem(event) {
-    if (!this.data.isParent) return
+    if (!this.data.canManagePlan) return
     const agendaId = event.currentTarget.dataset.id
     const agendaItem = this.data.todayAgenda.concat(this.data.selectedAgenda).find((entry) => entry.id === agendaId)
     if (!agendaItem || !agendaItem.sourceId) return
@@ -1391,7 +1600,7 @@ Page({
   },
 
   openCalendarAgendaDetail(event) {
-    if (!this.data.isParent) return
+    if (!this.data.canManagePlan) return
     const agendaId = event.currentTarget.dataset.id
     const agendaItem = this.data.selectedAgenda.find((entry) => entry.id === agendaId)
     if (agendaItem && agendaItem.category === 'course') {
@@ -1402,7 +1611,7 @@ Page({
   },
 
   openCourseSessionTypeEditor(event) {
-    if (!this.data.isParent) return
+    if (!this.data.canManagePlan) return
     const agendaId = event.currentTarget.dataset.id
     const agendaItem = this.data.todayAgenda.concat(this.data.selectedAgenda).find((entry) => entry.id === agendaId)
     if (!agendaItem || agendaItem.category !== 'course' || !agendaItem.sourceId) return
@@ -1458,6 +1667,13 @@ Page({
       extraSessions,
     })
     try {
+      if (this.data.isGuest) {
+        const courses = upsertGuestPlanItem(this.data.courses, payload)
+        wx.showToast({ title: '已临时更新当日类型', icon: 'none' })
+        this.setData({ courseSessionFormOpen: false, courseSessionDraft: null })
+        this.refreshGuestPlan({ courses })
+        return
+      }
       await api.updatePlanItem('courses', course.id, payload, this.data.session)
       wx.showToast({ title: '已更新当日类型', icon: 'success' })
       this.setData({ courseSessionFormOpen: false, courseSessionDraft: null })
@@ -1468,7 +1684,7 @@ Page({
   },
 
   openCourseFromSummary(event) {
-    if (!this.data.isParent) return
+    if (!this.data.canManagePlan) return
     const id = event.currentTarget.dataset.id
     const source = this.data.courses.find((item) => item.id === id)
     if (!source) return
@@ -1786,13 +2002,20 @@ Page({
 
     try {
       if (this.data.isGuest) {
-        if (kind !== 'tasks') return
-        const tasks = addGuestTask(this.data.tasks, Object.assign({
-          id: `guest-task-${Date.now()}`,
-        }, payload))
-        wx.showToast({ title: '已新增临时任务', icon: 'none' })
-        this.setData({ itemFormOpen: false, editingItemId: '' })
-        this.refreshView({ tasks })
+        const id = editingItemId || `guest-${kind}-${Date.now()}`
+        const nextItem = Object.assign({ id }, payload)
+        const listKey = {
+          courses: 'courses',
+          habits: 'habits',
+          tasks: 'tasks',
+          milestones: 'milestones',
+        }[kind]
+        const list = kind === 'tasks'
+          ? addGuestTask(this.data.tasks, nextItem)
+          : upsertGuestPlanItem(this.data[listKey], nextItem)
+        wx.showToast({ title: editingItemId ? '已保存临时数据' : '已新增临时数据', icon: 'none' })
+        this.setData({ itemFormOpen: false, editingItemId: '', itemExtraSessions: [] })
+        this.refreshGuestPlan({ [listKey]: list })
         return
       }
       if (editingItemId) {
@@ -1809,7 +2032,7 @@ Page({
   },
 
   deleteEditingItem() {
-    if (!this.data.isParent || !this.data.editingItemId) return
+    if ((!this.data.isParent && !this.data.isGuest) || !this.data.editingItemId) return
     const kind = this.data.itemFormKind
     const labelMap = {
       courses: '课程',
@@ -1825,6 +2048,19 @@ Page({
       success: async (res) => {
         if (!res.confirm) return
         try {
+          if (this.data.isGuest) {
+            const listKey = {
+              courses: 'courses',
+              habits: 'habits',
+              tasks: 'tasks',
+              milestones: 'milestones',
+            }[kind]
+            const list = deleteGuestPlanItem(this.data[listKey], this.data.editingItemId)
+            wx.showToast({ title: '已删除临时数据', icon: 'none' })
+            this.setData({ itemFormOpen: false, editingItemId: '' })
+            this.refreshGuestPlan({ [listKey]: list })
+            return
+          }
           await api.deletePlanItem(kind, this.data.editingItemId, this.data.session)
           wx.showToast({ title: '已删除', icon: 'success' })
           this.setData({ itemFormOpen: false, editingItemId: '' })
@@ -1837,10 +2073,12 @@ Page({
   },
 
   openGiftForm(event) {
-    if (!this.data.isParent) return
+    if (!this.data.isParent && !this.data.isGuest) return
     if (!this.data.activeFamily) {
-      this.openFamilySwitcher()
-      return
+      if (!this.data.isGuest) {
+        this.openFamilySwitcher()
+        return
+      }
     }
     const id = event.currentTarget.dataset.id
     const gift = this.data.gifts.find((item) => item.id === id)
@@ -2058,6 +2296,14 @@ Page({
     }
     const payload = buildGiftPayload(draft)
     try {
+      if (this.data.isGuest) {
+        const id = this.data.editingGiftId || `guest-gift-${Date.now()}`
+        const gifts = upsertGuestPlanItem(this.data.gifts, Object.assign({ id }, payload))
+        wx.showToast({ title: '礼品已临时保存', icon: 'none' })
+        this.setData({ giftFormOpen: false, editingGiftId: '' })
+        this.refreshGuestPlan({ gifts })
+        return
+      }
       if (this.data.editingGiftId) {
         await api.updateGift(this.data.editingGiftId, payload, this.data.session)
       } else {
@@ -2086,6 +2332,21 @@ Page({
       success: async (res) => {
         if (!res.confirm) return
         try {
+          if (this.data.isGuest) {
+            const redemption = {
+              id: `guest-redemption-${Date.now()}`,
+              childId: this.data.selectedChildId,
+              giftId,
+              giftTitle: gift.title,
+              pointsCost: gift.pointsCost,
+              status: 'pending',
+              note: '游客临时申请，保存到家庭后才会持久',
+              createdAt: new Date().toISOString(),
+            }
+            wx.showToast({ title: '已提交临时申请', icon: 'none' })
+            this.refreshGuestPlan({ redemptions: (this.data.redemptions || []).concat(redemption) })
+            return
+          }
           await api.createRedemption({ giftId, childId: this.data.selectedChildId }, this.data.session)
           wx.showToast({ title: '已提交', icon: 'success' })
           await this.fetchPlan()
@@ -2097,11 +2358,23 @@ Page({
   },
 
   async decideRedemption(event) {
-    if (!this.data.isParent) return
-    if (!this.data.activeFamily) return
+    if (!this.data.isParent && !this.data.isGuest) return
+    if (!this.data.activeFamily && !this.data.isGuest) return
     const id = event.currentTarget.dataset.id
     const status = event.currentTarget.dataset.status
     try {
+      if (this.data.isGuest) {
+        const redemptions = (this.data.redemptions || []).map((item) => item.id === id
+          ? Object.assign({}, item, {
+            status,
+            note: status === 'approved' ? '游客临时通过' : '游客临时退回',
+            decidedAt: new Date().toISOString(),
+          })
+          : item)
+        wx.showToast({ title: status === 'approved' ? '已通过' : '已退回', icon: 'none' })
+        this.refreshGuestPlan({ redemptions })
+        return
+      }
       await api.updateRedemptionStatus(id, status, this.data.session)
       wx.showToast({ title: status === 'approved' ? '已通过' : '已退回', icon: 'success' })
       await this.fetchPlan()
@@ -2111,10 +2384,12 @@ Page({
   },
 
   openRuleForm(event) {
-    if (!this.data.isParent) return
+    if (!this.data.isParent && !this.data.isGuest) return
     if (!this.data.activeFamily) {
-      this.openFamilySwitcher()
-      return
+      if (!this.data.isGuest) {
+        this.openFamilySwitcher()
+        return
+      }
     }
     const id = event.currentTarget.dataset.id
     const rule = this.data.rules.find((item) => item.id === id)
@@ -2159,6 +2434,14 @@ Page({
       childId: this.data.ruleScope === 'child' ? this.data.selectedChildId : '',
     }
     try {
+      if (this.data.isGuest) {
+        const id = this.data.editingRuleId || `guest-rule-${Date.now()}`
+        const rules = upsertGuestPlanItem(this.data.rules, Object.assign({ id }, payload))
+        wx.showToast({ title: '规则已临时保存', icon: 'none' })
+        this.setData({ ruleFormOpen: false, editingRuleId: '' })
+        this.refreshGuestPlan({ rules })
+        return
+      }
       if (this.data.editingRuleId) {
         await api.updateRule(this.data.editingRuleId, payload, this.data.session)
       } else {
@@ -2173,7 +2456,7 @@ Page({
   },
 
   deleteEditingRule() {
-    if (!this.data.isParent || !this.data.editingRuleId) return
+    if ((!this.data.isParent && !this.data.isGuest) || !this.data.editingRuleId) return
     wx.showModal({
       title: '删除规则',
       content: '删除后家长端和孩子端都不会再显示这条规则。',
@@ -2182,6 +2465,13 @@ Page({
       success: async (res) => {
         if (!res.confirm) return
         try {
+          if (this.data.isGuest) {
+            const rules = deleteGuestPlanItem(this.data.rules, this.data.editingRuleId)
+            wx.showToast({ title: '已删除临时规则', icon: 'none' })
+            this.setData({ ruleFormOpen: false, editingRuleId: '' })
+            this.refreshGuestPlan({ rules })
+            return
+          }
           await api.deleteRule(this.data.editingRuleId, this.data.session)
           wx.showToast({ title: '已删除', icon: 'success' })
           this.setData({ ruleFormOpen: false, editingRuleId: '' })

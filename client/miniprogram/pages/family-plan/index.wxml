@@ -70,6 +70,15 @@
       </view>
 
       <view class="tab-content" wx:if="{{activeTab === 'today'}}">
+        <view wx:if="{{isGuest}}" class="guest-expiry-card">
+          <view>
+            <view class="muted strong">游客模式 · 数据临时</view>
+            <view class="agenda-title">{{guestExpiryText}}</view>
+            <view class="muted">3 天后自动清空。微信登录并保存到家庭后，可长期保留。</view>
+          </view>
+          <button class="primary-button compact" bindtap="openLoginForm">保存到家庭</button>
+        </view>
+
         <view class="focus-card">
           <view>
             <view class="muted strong">专注时间 · 番茄钟</view>
@@ -100,18 +109,14 @@
           </view>
         </view>
 
-        <view class="quick-actions" wx:if="{{isParent && activeFamily}}">
+        <view class="quick-actions" wx:if="{{canManagePlan}}">
           <view class="quick-card course" data-kind="courses" bindtap="openItemForm">＋ 加课程</view>
           <view class="quick-card habit" data-kind="habits" bindtap="openItemForm">✓ 加习惯</view>
           <view class="quick-card task" data-kind="tasks" bindtap="openItemForm">▣ 加任务</view>
           <view class="quick-card milestone" data-kind="milestones" bindtap="openItemForm">◷ 倒计时</view>
         </view>
 
-        <view class="quick-actions guest-actions" wx:if="{{isGuest}}">
-          <view class="quick-card task" data-kind="tasks" bindtap="openItemForm">▣ 加临时任务</view>
-        </view>
-
-        <view class="course-summary" wx:if="{{isParent && activeFamily && courseSummary.length > 0}}">
+        <view class="course-summary" wx:if="{{canManagePlan && courseSummary.length > 0}}">
           <view class="section-head course-summary-head">
             <view>
               <view class="section-title">课程汇总</view>
@@ -248,7 +253,7 @@
 
         <view class="section-head calendar-agenda-head">
           <view class="section-title">{{selectedDateLabel}} 安排</view>
-          <button wx:if="{{isParent && activeFamily}}" class="primary-button compact" data-kind="tasks" bindtap="openItemForm">＋ 加任务</button>
+          <button wx:if="{{canManagePlan}}" class="primary-button compact" data-kind="tasks" bindtap="openItemForm">＋ 加任务</button>
         </view>
         <view class="empty-card" wx:if="{{selectedAgenda.length === 0}}">这天没有安排。</view>
         <view wx:for="{{selectedAgenda}}" wx:key="id" class="list-row" data-id="{{item.id}}" bindtap="openCalendarAgendaDetail">
@@ -324,7 +329,7 @@
 
       <view class="tab-content" wx:elif="{{activeTab === 'exchange'}}">
         <view class="exchange-config">
-          <view wx:if="{{isParent && activeFamily}}">
+          <view wx:if="{{canManagePlan}}">
             <view class="muted strong">礼品配置</view>
             <view class="summary-percent">{{giftCards.length}}</view>
             <view class="muted">已上架 {{activeGiftCount}}，待处理 {{pendingRedemptionCount}}</view>
@@ -333,7 +338,7 @@
             <view class="muted strong">可用积分</view>
             <view class="summary-percent">{{selectedChildPoints}}</view>
           </view>
-          <button wx:if="{{isParent && activeFamily}}" class="primary-button compact" bindtap="openGiftForm">＋ 加礼品</button>
+          <button wx:if="{{canManagePlan}}" class="primary-button compact" bindtap="openGiftForm">＋ 加礼品</button>
         </view>
 
         <view class="section-title">礼品中心</view>
@@ -350,8 +355,8 @@
               <view>库存 {{item.stock}}</view>
             </view>
             <view class="gift-actions">
-              <button wx:if="{{isParent && activeFamily}}" class="secondary-button" data-id="{{item.id}}" bindtap="openGiftForm">编辑</button>
-              <button wx:if="{{isChild}}" class="primary-button small" data-id="{{item.id}}" bindtap="requestGift">申请兑换</button>
+              <button wx:if="{{canManagePlan}}" class="secondary-button" data-id="{{item.id}}" bindtap="openGiftForm">编辑</button>
+              <button wx:if="{{isChild || isGuest}}" class="primary-button small" data-id="{{item.id}}" bindtap="requestGift">申请兑换</button>
             </view>
           </view>
         </view>
@@ -363,7 +368,7 @@
             <view class="agenda-title">{{item.giftTitle}}</view>
             <view class="muted">{{item.pointsCost}} 积分 · {{item.status}}</view>
           </view>
-          <view wx:if="{{isParent && activeFamily && item.status === 'pending'}}" class="redemption-actions">
+          <view wx:if="{{canManagePlan && item.status === 'pending'}}" class="redemption-actions">
             <button class="secondary-button mini" data-id="{{item.id}}" data-status="rejected" bindtap="decideRedemption">退回</button>
             <button class="primary-button mini" data-id="{{item.id}}" data-status="approved" bindtap="decideRedemption">通过</button>
           </view>
@@ -376,12 +381,12 @@
             <view class="section-title">规则查看</view>
             <view class="muted">共同规则 + {{selectedChild.name}} 的独立规则</view>
           </view>
-          <button wx:if="{{isParent && activeFamily}}" class="primary-button compact" bindtap="openRuleForm">＋ 规则</button>
+          <button wx:if="{{canManagePlan}}" class="primary-button compact" bindtap="openRuleForm">＋ 规则</button>
         </view>
         <view wx:for="{{visibleRules}}" wx:key="id" class="rule-card">
           <view class="rule-top">
             <view class="rule-scope">{{item.scope === 'common' ? '共同规则' : '独立规则'}}</view>
-            <button wx:if="{{isParent && activeFamily}}" class="text-button" data-id="{{item.id}}" bindtap="openRuleForm">编辑</button>
+            <button wx:if="{{canManagePlan}}" class="text-button" data-id="{{item.id}}" bindtap="openRuleForm">编辑</button>
           </view>
           <view class="agenda-title">{{item.title}}</view>
           <view class="muted">{{item.body}}</view>

@@ -154,6 +154,7 @@ picker {
 
 .login-card,
 .summary-card,
+.guest-expiry-card,
 .focus-card,
 .calendar-card,
 .exchange-config,
@@ -873,6 +874,17 @@ picker {
   gap: 20rpx;
   padding: 32rpx;
   margin-bottom: 30rpx;
+}
+
+.guest-expiry-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 28rpx 30rpx;
+  margin-bottom: 24rpx;
+  border-color: rgba(245, 163, 22, 0.28);
+  background: rgba(255, 247, 222, 0.92);
 }
 
 .focus-time {

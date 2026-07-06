@@ -65,8 +65,28 @@ assert(
 )
 
 assert(
-  wxml.includes('wx:if="{{isGuest}}"') && wxml.includes('data-kind="tasks" bindtap="openItemForm">▣ 加临时任务'),
-  'guest users should be able to add temporary local tasks'
+  wxml.includes('wx:if="{{canManagePlan}}"') && wxml.includes('data-kind="tasks" bindtap="openItemForm">▣ 加任务'),
+  'guest temporary family should use the full task creation entry'
+)
+
+assert(
+  wxml.includes('guestExpiryText') && wxml.includes('3 天后自动清空'),
+  'guest users should see temporary account expiry and deletion warning'
+)
+
+assert(
+  wxml.includes('wx:if="{{canManagePlan}}"') && wxml.includes('data-kind="courses" bindtap="openItemForm">＋ 加课程'),
+  'guest temporary family should expose the same plan creation entry points'
+)
+
+assert(
+  wxml.includes('wx:if="{{canManagePlan}}" class="primary-button compact" bindtap="openGiftForm"'),
+  'guest temporary family should expose gift management'
+)
+
+assert(
+  wxml.includes('wx:if="{{canManagePlan}}" class="primary-button compact" bindtap="openRuleForm"'),
+  'guest temporary family should expose rule management'
 )
 
 console.log('familyPlanWxml tests passed')
