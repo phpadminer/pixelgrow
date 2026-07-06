@@ -667,6 +667,7 @@ Page({
     guestNoticeDismissed: false,
     canManagePlan: false,
     needsFamilySetup: false,
+    pendingGuestSavePlan: null,
     familySwitcherOpen: false,
     createFamilyFormOpen: false,
     joinFamilyFormOpen: false,
@@ -870,6 +871,11 @@ Page({
       })
       wx.showToast({ title: session.activeFamily ? '登录成功' : '微信登录成功', icon: 'none' })
       await this.fetchPlan()
+      if (!this.data.activeFamily && hasGuestPlanData(pendingGuestPlan)) {
+        this.setData({ pendingGuestSavePlan: pendingGuestPlan })
+        wx.showToast({ title: '先创建家庭，创建后自动保存', icon: 'none' })
+        return
+      }
       await this.maybeOfferGuestPlanSave(pendingGuestPlan)
     } catch (err) {
       this.showError(err, '微信登录失败')
@@ -920,6 +926,7 @@ Page({
       familySwitcherOpen: false,
       createFamilyFormOpen: false,
       joinFamilyFormOpen: false,
+      pendingGuestSavePlan: null,
       inviteInfo: null,
       notifications: [],
       notificationCount: 0,
@@ -1013,12 +1020,32 @@ Page({
       wx.removeStorageSync(GUEST_PLAN_KEY)
       wx.removeStorageSync(GUEST_SESSION_KEY)
       wx.removeStorageSync(GUEST_NOTICE_DISMISSED_KEY)
+      this.setData({ pendingGuestSavePlan: null })
       wx.showToast({ title: '已保存到家庭', icon: 'success' })
       await this.fetchPlan()
     } catch (err) {
       this.showError(err, '游客数据保存失败')
     } finally {
       this.setData({ loading: false })
+    }
+  },
+
+  async savePendingGuestPlanAfterFamilySetup(fallbackPlan) {
+    const guestPlan = this.data.pendingGuestSavePlan || fallbackPlan || this.getStoredGuestPlan()
+    if (!hasGuestPlanData(guestPlan)) return false
+    if (!this.data.session || this.data.session.role !== 'parent' || !this.data.activeFamily) return false
+    try {
+      await this.saveGuestPlanToFamily(guestPlan)
+      wx.removeStorageSync(GUEST_PLAN_KEY)
+      wx.removeStorageSync(GUEST_SESSION_KEY)
+      wx.removeStorageSync(GUEST_NOTICE_DISMISSED_KEY)
+      this.setData({ pendingGuestSavePlan: null })
+      wx.showToast({ title: '游客数据已保存', icon: 'success' })
+      await this.fetchPlan()
+      return true
+    } catch (err) {
+      this.showError(err, '游客数据保存失败')
+      return null
     }
   },
 
@@ -1190,9 +1217,9 @@ Page({
     try {
       const session = await api.createFamily({ name }, this.data.session)
       this.applySession(session)
-      wx.showToast({ title: '家庭已创建', icon: 'success' })
       await this.fetchPlan()
-      await this.maybeOfferGuestPlanSave(pendingGuestPlan)
+      const saved = await this.savePendingGuestPlanAfterFamilySetup(pendingGuestPlan)
+      if (saved === false) wx.showToast({ title: '家庭已创建', icon: 'success' })
     } catch (err) {
       this.showError(err, '创建家庭失败')
     } finally {
@@ -1211,9 +1238,9 @@ Page({
     try {
       const session = await api.joinFamilyByInvite({ inviteCode }, this.data.session)
       this.applySession(session)
-      wx.showToast({ title: '已加入家庭', icon: 'success' })
       await this.fetchPlan()
-      await this.maybeOfferGuestPlanSave(pendingGuestPlan)
+      const saved = await this.savePendingGuestPlanAfterFamilySetup(pendingGuestPlan)
+      if (saved === false) wx.showToast({ title: '已加入家庭', icon: 'success' })
     } catch (err) {
       this.showError(err, '加入家庭失败')
     } finally {
@@ -1229,9 +1256,9 @@ Page({
     try {
       const session = await api.switchFamily(familyId, this.data.session)
       this.applySession(session)
-      wx.showToast({ title: '已切换家庭', icon: 'success' })
       await this.fetchPlan()
-      await this.maybeOfferGuestPlanSave(pendingGuestPlan)
+      const saved = await this.savePendingGuestPlanAfterFamilySetup(pendingGuestPlan)
+      if (saved === false) wx.showToast({ title: '已切换家庭', icon: 'success' })
     } catch (err) {
       this.showError(err, '切换家庭失败')
     } finally {

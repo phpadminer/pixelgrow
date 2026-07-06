@@ -85,6 +85,7 @@
             <view class="muted strong">微信登录已完成</view>
             <view class="agenda-title">还没有家庭</view>
             <view class="muted">微信登录只用于绑定账号，不需要手机号、头像或昵称授权。下一步创建家庭，或输入邀请码加入别人家庭。</view>
+            <view wx:if="{{pendingGuestSavePlan}}" class="muted">创建或加入家庭后，会自动保存游客数据。</view>
           </view>
           <view class="family-actions inline">
             <button class="secondary-button" bindtap="openJoinFamilyForm">加入家庭</button>
