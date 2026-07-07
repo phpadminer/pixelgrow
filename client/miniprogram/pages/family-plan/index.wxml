@@ -40,6 +40,19 @@
         </view>
       </view>
 
+      <view wx:if="{{guestPreviewSwitchVisible}}" class="guest-preview-switch">
+        <view
+          class="guest-preview-option {{guestPreviewRole === 'parent' ? 'active' : ''}}"
+          data-role="parent"
+          bindtap="switchGuestPreviewRole"
+        >家长预览</view>
+        <view
+          class="guest-preview-option {{guestPreviewRole === 'child' ? 'active' : ''}}"
+          data-role="child"
+          bindtap="switchGuestPreviewRole"
+        >孩子预览</view>
+      </view>
+
       <view wx:if="{{isGuest && !guestNoticeDismissed}}" class="guest-expiry-card">
         <button class="guest-expiry-close" bindtap="dismissGuestExpiryCard" aria-label="关闭">×</button>
         <view class="guest-expiry-main">

@@ -889,6 +889,35 @@ picker {
   background: rgba(255, 247, 222, 0.92);
 }
 
+.guest-preview-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8rpx;
+  padding: 8rpx;
+  margin: 0 0 20rpx;
+  border: 2rpx solid rgba(245, 163, 22, 0.2);
+  border-radius: 22rpx;
+  background: rgba(255, 246, 222, 0.82);
+}
+
+.guest-preview-option {
+  min-height: 62rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  color: #8a6a28;
+  font-size: 25rpx;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.guest-preview-option.active {
+  background: linear-gradient(135deg, #ffd255, #f5a316);
+  color: #fff;
+  box-shadow: 0 12rpx 22rpx rgba(245, 163, 22, 0.18);
+}
+
 .guest-expiry-main {
   flex: 1 1 auto;
   min-width: 0;

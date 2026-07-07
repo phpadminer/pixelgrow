@@ -45,7 +45,7 @@ assert(
 )
 
 assert(
-  !wxml.includes('bindtap="switchLoginRole"') && !wxml.includes('data-role="child"'),
+  !wxml.includes('bindtap="switchLoginRole"'),
   'main login sheet should not expose a child login role switch'
 )
 

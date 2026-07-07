@@ -125,8 +125,9 @@ testParentCanUndoConfirmedCompletion()
 testChildCannotUndoConfirmedCompletion()
 
 assert(
-  /const actionOptions = \{ now, isParent: role === 'parent', canUndoCompletion: role === 'parent' \|\| role === 'guest' \}/.test(pageJs),
-  'parent and guest views should enable undo for confirmed completions'
+  /const canActAsParent = role === 'parent' \|\| isGuestParentPreview/.test(pageJs)
+    && /const actionOptions = \{ now, isParent: canActAsParent, canUndoCompletion: canActAsParent \}/.test(pageJs),
+  'parent and guest parent preview should enable undo for confirmed completions'
 )
 
 assert(

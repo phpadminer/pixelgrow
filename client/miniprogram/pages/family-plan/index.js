@@ -697,6 +697,10 @@ Page({
     guestExpiryText: '',
     guestExpiredNotice: false,
     guestNoticeDismissed: false,
+    guestPreviewRole: 'parent',
+    guestPreviewSwitchVisible: false,
+    isGuestParentPreview: true,
+    isGuestChildPreview: false,
     canManagePlan: false,
     needsFamilySetup: false,
     pendingGuestSavePlan: null,
@@ -824,6 +828,7 @@ Page({
       roleLabel: getRoleLabel(role),
       tabs: getTabsForRole(role),
       pageTitle: getPageTitle(role, 'today'),
+      guestPreviewRole: 'parent',
       today,
       selectedDate: today,
       selectedDateLabel: shortDate(today),
@@ -845,6 +850,11 @@ Page({
   switchLoginRole(event) {
     const role = event.currentTarget.dataset.role
     this.setData({ loginRole: role })
+  },
+
+  switchGuestPreviewRole(event) {
+    const role = event.currentTarget.dataset.role === 'child' ? 'child' : 'parent'
+    this.refreshView({ guestPreviewRole: role, activeTab: 'today' })
   },
 
   onLoginInput(event) {
@@ -880,6 +890,9 @@ Page({
       isGuest: true,
       isParent: false,
       isChild: false,
+      guestPreviewRole: 'parent',
+      isGuestParentPreview: true,
+      isGuestChildPreview: false,
       roleLabel: getRoleLabel('guest'),
       tabs: getTabsForRole('guest'),
       pageTitle: getPageTitle('guest', 'today'),
@@ -910,6 +923,10 @@ Page({
       isGuest: !session,
       isParent: role === 'parent',
       isChild: role === 'child',
+      guestPreviewRole: 'parent',
+      guestPreviewSwitchVisible: false,
+      isGuestParentPreview: false,
+      isGuestChildPreview: false,
       roleLabel: getRoleLabel(role),
       startChoiceOpen: false,
       tabs: getTabsForRole(role),
@@ -991,6 +1008,10 @@ Page({
       isGuest: true,
       isParent: false,
       isChild: false,
+      guestPreviewRole: 'parent',
+      guestPreviewSwitchVisible: false,
+      isGuestParentPreview: true,
+      isGuestChildPreview: false,
       account: null,
       families: [],
       activeFamily: null,
@@ -1514,14 +1535,20 @@ Page({
       milestones: state.milestones,
       completions: state.completions,
     }
-    const role = state.session && state.session.role ? state.session.role : 'guest'
+    const baseRole = state.session && state.session.role ? state.session.role : 'guest'
+    const guestPreviewRole = state.guestPreviewRole === 'child' ? 'child' : 'parent'
+    const isGuest = baseRole === 'guest'
+    const isGuestChildPreview = isGuest && guestPreviewRole === 'child'
+    const isGuestParentPreview = isGuest && guestPreviewRole !== 'child'
+    const role = isGuestChildPreview ? 'child' : baseRole
     const tabs = getTabsForRole(role)
     let activeTab = state.activeTab
     if (activeTab !== 'notifications' && tabs.every((item) => item.key !== activeTab)) {
       activeTab = 'today'
     }
     const now = new Date()
-    const actionOptions = { now, isParent: role === 'parent', canUndoCompletion: role === 'parent' || role === 'guest' }
+    const canActAsParent = role === 'parent' || isGuestParentPreview
+    const actionOptions = { now, isParent: canActAsParent, canUndoCompletion: canActAsParent }
     const todayAgenda = decorateAgendaActions(
       buildAgenda(state.today, source, selectedChildId),
       state.today,
@@ -1562,17 +1589,22 @@ Page({
     const historyAgenda = buildHistoryAgenda(state.today, source, selectedChildId)
     const historyCategoryStats = summarizeCategory(historyAgenda)
     const historySummary = summarizeHistoryTrend(historyTrend)
-    const needsFamilySetup = role === 'parent' && Boolean(state.account) && !state.activeFamily
-    const canManagePlan = role === 'parent' ? Boolean(state.activeFamily) : role === 'guest'
-    const guestOnboardingVisible = role === 'guest' && (state.children || []).length === 0
+    const needsFamilySetup = baseRole === 'parent' && Boolean(state.account) && !state.activeFamily
+    const canManagePlan = baseRole === 'parent' ? Boolean(state.activeFamily) : isGuestParentPreview
+    const guestOnboardingVisible = isGuest && (state.children || []).length === 0
+    const guestPreviewSwitchVisible = isGuest && (state.children || []).length > 0
     this.setData(Object.assign({}, patch, {
       tabs,
       activeTab,
       pageTitle: getPageTitle(role, activeTab),
-      roleLabel: getRoleLabel(role),
-      isGuest: role === 'guest',
-      isParent: role === 'parent',
+      roleLabel: isGuest ? (isGuestChildPreview ? '孩子预览' : '家长预览') : getRoleLabel(role),
+      isGuest,
+      isParent: role === 'parent' || isGuestParentPreview,
       isChild: role === 'child',
+      guestPreviewRole,
+      guestPreviewSwitchVisible,
+      isGuestParentPreview,
+      isGuestChildPreview,
       canManagePlan,
       needsFamilySetup,
       guestOnboardingVisible,
