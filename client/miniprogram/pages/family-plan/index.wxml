@@ -29,7 +29,11 @@
             <view class="bell-shape"></view>
             <view wx:if="{{notificationCount > 0}}" class="notification-badge">{{notificationCount}}</view>
           </button>
-          <button wx:if="{{isGuest}}" class="role-button" bindtap="openLoginForm">
+          <button wx:if="{{parentChildPreviewActive}}" class="role-button" bindtap="returnToParentView">
+            <view class="login-shape"></view>
+            <text>返回家长</text>
+          </button>
+          <button wx:elif="{{isGuest}}" class="role-button" bindtap="openLoginForm">
             <view class="login-shape"></view>
             <text>登录</text>
           </button>
@@ -588,13 +592,21 @@
             <view class="family-member-name">{{item.name}}</view>
             <view class="muted">{{item.grade}} · {{item.points}} 积分 · {{item.bindStatusText}}</view>
           </view>
-          <button
-            wx:if="{{item.canBindWechat}}"
-            class="secondary-button mini family-child-bind-button"
-            data-child-key="{{item.childKey}}"
-            loading="{{loading}}"
-            bindtap="createChildBindInvite"
-          >绑定微信</button>
+          <view class="family-child-actions">
+            <button
+              class="secondary-button mini family-child-bind-button"
+              data-child-id="{{item.id}}"
+              loading="{{loading}}"
+              bindtap="previewFamilyChild"
+            >孩子视角</button>
+            <button
+              wx:if="{{item.canBindWechat}}"
+              class="secondary-button mini family-child-bind-button"
+              data-child-key="{{item.childKey}}"
+              loading="{{loading}}"
+              bindtap="createChildBindInvite"
+            >绑定微信</button>
+          </view>
         </view>
         <view class="helper-text">孩子账号先由系统保存；绑定微信后，孩子可用自己的微信进入。</view>
       </view>

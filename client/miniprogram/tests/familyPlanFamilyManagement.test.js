@@ -56,10 +56,12 @@ assert(
 assert(
   wxml.includes('bindtap="createChildBindInvite"')
     && wxml.includes('绑定微信')
+    && wxml.includes('bindtap="previewFamilyChild"')
+    && wxml.includes('孩子视角')
     && wxml.includes('邀请家长')
     && wxml.includes('wx:if="{{item.canBindWechat}}"')
     && !wxml.includes('邀请管理员'),
-  'family management should expose parent invite and child WeChat binding without admin invite UI'
+  'family management should expose parent invite, child preview, and child WeChat binding without admin invite UI'
 )
 
 assert(
@@ -83,6 +85,22 @@ assert(
   /async createChildBindInvite\(event\)[\s\S]*?api\.createInvite\(\{ role: 'child', childKey, maxUses: 1 \}/.test(pageJs)
     && /function decorateInviteInfo\(inviteInfo\)[\s\S]*?孩子绑定码[\s\S]*?家长邀请码/.test(pageJs),
   'client should generate child binding invites and decorate invite copy by role'
+)
+
+assert(
+  wxml.includes('wx:if="{{parentChildPreviewActive}}"')
+    && wxml.includes('bindtap="returnToParentView"')
+    && wxml.includes('返回家长'),
+  'parent child preview should expose a clear return action in the header'
+)
+
+assert(
+  /parentChildPreviewChildId: ''/.test(pageJs)
+    && /previewFamilyChild\(event\)[\s\S]*?parentChildPreviewChildId: childId[\s\S]*?familySwitcherOpen: false[\s\S]*?activeTab: 'today'/.test(pageJs)
+    && /returnToParentView\(\)[\s\S]*?parentChildPreviewChildId: ''[\s\S]*?activeTab: 'today'/.test(pageJs)
+    && /const isParentChildPreview = baseRole === 'parent'/.test(pageJs)
+    && /roleLabel: isParentChildPreview \? '孩子预览'/.test(pageJs),
+  'logged-in parents should be able to preview a selected child without changing the session role'
 )
 
 assert(

@@ -24,9 +24,9 @@ assert(
 
 assert(
   /const isGuestChildPreview = isGuest && guestPreviewRole === 'child'/.test(pageJs)
-    && /const role = isGuestChildPreview \? 'child' : baseRole/.test(pageJs)
-    && /const canManagePlan = baseRole === 'parent' \? Boolean\(state\.activeFamily\) : isGuestParentPreview/.test(pageJs),
-  'guest child preview should use child tabs while only guest parent preview can manage plans'
+    && /const role = isGuestChildPreview \|\| isParentChildPreview \? 'child' : baseRole/.test(pageJs)
+    && /const canManagePlan = baseRole === 'parent' && !isParentChildPreview \? Boolean\(state\.activeFamily\) : isGuestParentPreview/.test(pageJs),
+  'child preview should use child tabs while only parent views can manage plans'
 )
 
 assert(

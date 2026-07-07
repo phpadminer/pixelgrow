@@ -772,6 +772,8 @@ Page({
     guestPreviewSwitchVisible: false,
     isGuestParentPreview: true,
     isGuestChildPreview: false,
+    parentChildPreviewChildId: '',
+    parentChildPreviewActive: false,
     canManagePlan: false,
     needsFamilySetup: false,
     pendingGuestSavePlan: null,
@@ -904,6 +906,8 @@ Page({
       tabs: getTabsForRole(role),
       pageTitle: getPageTitle(role, 'today'),
       guestPreviewRole: 'parent',
+      parentChildPreviewChildId: '',
+      parentChildPreviewActive: false,
       today,
       selectedDate: today,
       selectedDateLabel: shortDate(today),
@@ -952,6 +956,24 @@ Page({
     this.refreshView({ guestPreviewRole: role, activeTab: 'today' })
   },
 
+  previewFamilyChild(event) {
+    const childId = event.currentTarget.dataset.childId || ''
+    if (!childId) return
+    this.refreshView({
+      parentChildPreviewChildId: childId,
+      selectedChildId: childId,
+      familySwitcherOpen: false,
+      activeTab: 'today',
+    })
+  },
+
+  returnToParentView() {
+    this.refreshView({
+      parentChildPreviewChildId: '',
+      activeTab: 'today',
+    })
+  },
+
   onLoginInput(event) {
     const field = event.currentTarget.dataset.field
     this.setData({ [field]: event.detail.value })
@@ -989,6 +1011,8 @@ Page({
       isChild: false,
       guestModeStarted: true,
       guestPreviewRole: 'parent',
+      parentChildPreviewChildId: '',
+      parentChildPreviewActive: false,
       isGuestParentPreview: true,
       isGuestChildPreview: false,
       roleLabel: getRoleLabel('guest'),
@@ -1021,6 +1045,8 @@ Page({
       isChild: role === 'child',
       guestModeStarted: false,
       guestPreviewRole: 'parent',
+      parentChildPreviewChildId: '',
+      parentChildPreviewActive: false,
       guestPreviewSwitchVisible: false,
       isGuestParentPreview: false,
       isGuestChildPreview: false,
@@ -1777,7 +1803,11 @@ Page({
     const isGuest = baseRole === 'guest'
     const isGuestChildPreview = isGuest && guestPreviewRole === 'child'
     const isGuestParentPreview = isGuest && guestPreviewRole !== 'child'
-    const role = isGuestChildPreview ? 'child' : baseRole
+    const parentChildPreviewChildId = baseRole === 'parent' ? (state.parentChildPreviewChildId || '') : ''
+    const isParentChildPreview = baseRole === 'parent'
+      && Boolean(parentChildPreviewChildId)
+      && parentChildPreviewChildId === selectedChildId
+    const role = isGuestChildPreview || isParentChildPreview ? 'child' : baseRole
     const tabs = getTabsForRole(role)
     let activeTab = state.activeTab
     if (activeTab !== 'notifications' && tabs.every((item) => item.key !== activeTab)) {
@@ -1827,14 +1857,14 @@ Page({
     const historyCategoryStats = summarizeCategory(historyAgenda)
     const historySummary = summarizeHistoryTrend(historyTrend)
     const needsFamilySetup = baseRole === 'parent' && Boolean(state.account) && !state.activeFamily
-    const canManagePlan = baseRole === 'parent' ? Boolean(state.activeFamily) : isGuestParentPreview
+    const canManagePlan = baseRole === 'parent' && !isParentChildPreview ? Boolean(state.activeFamily) : isGuestParentPreview
     const guestOnboardingVisible = isGuest && (state.children || []).length === 0
     const guestPreviewSwitchVisible = isGuest && (state.children || []).length > 0
     this.setData(Object.assign({}, patch, {
       tabs,
       activeTab,
       pageTitle: getPageTitle(role, activeTab),
-      roleLabel: isGuest ? (isGuestChildPreview ? '孩子预览' : '家长预览') : getRoleLabel(role),
+      roleLabel: isParentChildPreview ? '孩子预览' : isGuest ? (isGuestChildPreview ? '孩子预览' : '家长预览') : getRoleLabel(role),
       isGuest,
       isParent: role === 'parent' || isGuestParentPreview,
       isChild: role === 'child',
@@ -1842,6 +1872,8 @@ Page({
       guestPreviewSwitchVisible,
       isGuestParentPreview,
       isGuestChildPreview,
+      parentChildPreviewChildId,
+      parentChildPreviewActive: isParentChildPreview,
       canManagePlan,
       needsFamilySetup,
       guestOnboardingVisible,

@@ -2465,6 +2465,14 @@ picker {
   min-width: 132rpx;
 }
 
+.family-child-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  align-items: stretch;
+}
+
 .family-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
