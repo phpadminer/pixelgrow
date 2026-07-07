@@ -1000,6 +1000,20 @@ Page({
     this.setData({ accountAvatarUrl: event.detail.avatarUrl })
   },
 
+  async confirmAccountProfileBeforeLogin() {
+    if (String(this.data.accountNickname || '').trim() && this.data.accountAvatarUrl) return true
+    return new Promise((resolve) => {
+      wx.showModal({
+        title: '设置头像昵称',
+        content: '微信不会自动提供头像昵称。建议先点头像和昵称输入框选择资料，方便家人识别。',
+        confirmText: '继续登录',
+        cancelText: '去设置',
+        success: (res) => resolve(Boolean(res.confirm)),
+        fail: () => resolve(false),
+      })
+    })
+  },
+
   async openLoginForm() {
     const restored = await this.restoreWechatSessionFromAction()
     if (restored) return
@@ -1140,8 +1154,13 @@ Page({
         })
         await this.fetchPlan()
         if (!this.data.activeFamily && hasGuestPlanData(pendingGuestPlan)) {
-          this.setData({ pendingGuestSavePlan: pendingGuestPlan })
-          wx.showToast({ title: '先创建家庭，创建后自动保存', icon: 'none' })
+          const keepGuestPlan = await this.confirmPendingGuestPlanWithoutFamily(pendingGuestPlan)
+          if (keepGuestPlan) {
+            this.setData({ pendingGuestSavePlan: pendingGuestPlan })
+            wx.showToast({ title: '创建或加入家庭后可保存', icon: 'none' })
+          }
+        } else {
+          await this.maybeOfferGuestPlanSave(pendingGuestPlan)
         }
         return true
       }
@@ -1156,6 +1175,8 @@ Page({
   },
 
   async loginWithWechat() {
+    const profileConfirmed = await this.confirmAccountProfileBeforeLogin()
+    if (!profileConfirmed) return
     const pendingGuestPlan = this.getStoredGuestPlan()
     this.setData({ loading: true })
     try {
@@ -1172,8 +1193,11 @@ Page({
       wx.showToast({ title: session.activeFamily ? '登录成功' : '微信登录成功', icon: 'none' })
       await this.fetchPlan()
       if (!this.data.activeFamily && hasGuestPlanData(pendingGuestPlan)) {
-        this.setData({ pendingGuestSavePlan: pendingGuestPlan })
-        wx.showToast({ title: '先创建家庭，创建后自动保存', icon: 'none' })
+        const keepGuestPlan = await this.confirmPendingGuestPlanWithoutFamily(pendingGuestPlan)
+        if (keepGuestPlan) {
+          this.setData({ pendingGuestSavePlan: pendingGuestPlan })
+          wx.showToast({ title: '创建或加入家庭后可保存', icon: 'none' })
+        }
         return
       }
       await this.maybeOfferGuestPlanSave(pendingGuestPlan)
@@ -1295,6 +1319,23 @@ Page({
     })
   },
 
+  clearGuestLocalData() {
+    wx.removeStorageSync(GUEST_PLAN_KEY)
+    wx.removeStorageSync(GUEST_SESSION_KEY)
+    wx.removeStorageSync(GUEST_NOTICE_DISMISSED_KEY)
+    this.setData({
+      guestSession: null,
+      guestExpiryText: '',
+      guestExpiredNotice: false,
+      guestNoticeDismissed: false,
+      pendingGuestSavePlan: null,
+    })
+    wx.showToast({ title: '游客数据已清空', icon: 'success' })
+    if (this.data.isGuest) {
+      this.logout()
+    }
+  },
+
   currentGuestPlan(patch = {}) {
     return Object.assign({
       children: this.data.children || [],
@@ -1329,17 +1370,12 @@ Page({
     const guestPlan = pendingGuestPlan || this.getStoredGuestPlan()
     if (!hasGuestPlanData(guestPlan)) return
     if (!this.data.session || this.data.session.role !== 'parent' || !this.data.activeFamily) return
-    const confirmed = await new Promise((resolve) => {
-      wx.showModal({
-        title: '保存游客数据',
-        content: '把这 3 天游客体验里的课程、任务、礼品、规则和完成记录保存到当前家庭？保存后游客临时数据会清空。',
-        confirmText: '保存',
-        cancelText: '稍后',
-        success: (res) => resolve(Boolean(res.confirm)),
-        fail: () => resolve(false),
-      })
-    })
-    if (!confirmed) return
+    const action = await this.chooseGuestPlanAction()
+    if (action === 'clear') {
+      this.clearGuestLocalData()
+      return
+    }
+    if (action !== 'save') return
     this.setData({ loading: true })
     try {
       await this.saveGuestPlanToFamily(guestPlan)
@@ -1354,6 +1390,39 @@ Page({
     } finally {
       this.setData({ loading: false })
     }
+  },
+
+  chooseGuestPlanAction() {
+    return new Promise((resolve) => {
+      wx.showActionSheet({
+        itemList: ['保存到当前家庭', '不保存，清空本地数据', '稍后处理'],
+        success: (res) => {
+          if (res.tapIndex === 0) resolve('save')
+          else if (res.tapIndex === 1) resolve('clear')
+          else resolve('later')
+        },
+        fail: () => resolve('later'),
+      })
+    })
+  },
+
+  async confirmPendingGuestPlanWithoutFamily(guestPlan) {
+    if (!hasGuestPlanData(guestPlan)) return false
+    const keep = await new Promise((resolve) => {
+      wx.showModal({
+        title: '检测到游客数据',
+        content: '当前账号还没有家庭。可以保留游客数据，创建或加入家庭后再保存；也可以直接清空。',
+        confirmText: '保留待保存',
+        cancelText: '清空',
+        success: (res) => resolve(Boolean(res.confirm)),
+        fail: () => resolve(false),
+      })
+    })
+    if (!keep) {
+      this.clearGuestLocalData()
+      return false
+    }
+    return true
   },
 
   async savePendingGuestPlanAfterFamilySetup(fallbackPlan) {

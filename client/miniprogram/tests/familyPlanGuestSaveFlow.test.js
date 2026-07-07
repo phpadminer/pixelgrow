@@ -16,6 +16,25 @@ assert(
 )
 
 assert(
+  /clearGuestLocalData\(\)[\s\S]*?wx\.removeStorageSync\(GUEST_PLAN_KEY\)[\s\S]*?wx\.removeStorageSync\(GUEST_SESSION_KEY\)[\s\S]*?pendingGuestSavePlan: null/.test(pageJs)
+    && wxml.includes('bindtap="clearGuestLocalData"')
+    && wxml.includes('清空体验'),
+  'guest users should be able to explicitly clear local temporary data'
+)
+
+assert(
+  /chooseGuestPlanAction\(\)[\s\S]*?wx\.showActionSheet\(\{[\s\S]*?保存到当前家庭[\s\S]*?不保存，清空本地数据[\s\S]*?稍后处理/.test(pageJs)
+    && /async maybeOfferGuestPlanSave\(pendingGuestPlan\)[\s\S]*?const action = await this\.chooseGuestPlanAction\(\)[\s\S]*?if \(action === 'clear'\) \{[\s\S]*?this\.clearGuestLocalData\(\)/.test(pageJs),
+  'login with an active family should ask whether to save, clear, or keep guest data for later'
+)
+
+assert(
+  /async confirmPendingGuestPlanWithoutFamily\(guestPlan\)[\s\S]*?检测到游客数据[\s\S]*?保留待保存[\s\S]*?清空/.test(pageJs)
+    && /async loginWithWechat\(\)[\s\S]*?await this\.confirmPendingGuestPlanWithoutFamily\(pendingGuestPlan\)/.test(pageJs),
+  'login without an active family should ask whether to keep guest data for later saving or clear it'
+)
+
+assert(
   /async savePendingGuestPlanAfterFamilySetup\(fallbackPlan\)[\s\S]*?saveGuestPlanToFamily\(guestPlan\)/.test(pageJs),
   'family setup should save remembered guest data after a family exists'
 )

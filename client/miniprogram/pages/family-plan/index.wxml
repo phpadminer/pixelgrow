@@ -64,7 +64,10 @@
           <view class="agenda-title">{{guestExpiryText}}</view>
           <view class="muted">3 天后自动清空。微信登录并保存到家庭后，可长期保留。</view>
         </view>
-        <button class="primary-button compact guest-save-button" bindtap="openLoginForm">登录保存</button>
+        <view class="guest-expiry-actions">
+          <button class="primary-button compact guest-save-button" bindtap="openLoginForm">登录保存</button>
+          <button class="secondary-button compact guest-clear-button" bindtap="clearGuestLocalData">清空体验</button>
+        </view>
       </view>
 
       <view wx:if="{{guestOnboardingVisible}}" class="guest-onboarding-card">
@@ -532,6 +535,7 @@
           <view class="account-profile-fields">
             <view class="field-label compact-label">账号资料</view>
             <input class="text-input account-nickname-input" type="nickname" placeholder="微信昵称" value="{{accountNickname}}" bindinput="onAccountNicknameInput" />
+            <view class="helper-text compact">点头像选择微信头像，点昵称输入框选择微信昵称。</view>
             <view class="account-role-row">
               <view class="account-role-label">身份</view>
               <view class="account-role-pill">{{accountRoleLabel}}</view>

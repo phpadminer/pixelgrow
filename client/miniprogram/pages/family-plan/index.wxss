@@ -931,6 +931,21 @@ picker {
   white-space: nowrap;
 }
 
+.guest-expiry-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  width: 168rpx;
+}
+
+.guest-clear-button {
+  width: 100%;
+  min-width: 168rpx;
+  padding: 0 18rpx;
+  white-space: nowrap;
+}
+
 .guest-expiry-close {
   position: absolute;
   top: 12rpx;
