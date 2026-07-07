@@ -58,6 +58,7 @@ assert(
     && wxml.includes('绑定微信')
     && wxml.includes('bindtap="previewFamilyChild"')
     && wxml.includes('孩子视角')
+    && wxml.includes('data-child-id="{{item.childKey}}"')
     && wxml.includes('邀请家长')
     && wxml.includes('wx:if="{{item.canBindWechat}}"')
     && !wxml.includes('邀请管理员'),

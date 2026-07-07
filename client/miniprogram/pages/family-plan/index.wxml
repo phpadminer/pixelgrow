@@ -595,7 +595,7 @@
           <view class="family-child-actions">
             <button
               class="secondary-button mini family-child-bind-button"
-              data-child-id="{{item.id}}"
+              data-child-id="{{item.childKey}}"
               loading="{{loading}}"
               bindtap="previewFamilyChild"
             >孩子视角</button>
