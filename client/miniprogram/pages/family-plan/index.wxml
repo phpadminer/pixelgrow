@@ -90,7 +90,7 @@
         <button class="primary-button compact" bindtap="createDefaultGuestChild">创建临时孩子</button>
       </view>
 
-      <view class="children-row" wx:if="{{activeTab !== 'notifications' && children.length > 1}}">
+      <view class="children-row" wx:if="{{activeTab !== 'notifications' && !isChild && children.length > 1}}">
         <view
           wx:for="{{children}}"
           wx:key="id"

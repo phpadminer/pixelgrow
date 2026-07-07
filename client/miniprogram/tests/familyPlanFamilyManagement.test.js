@@ -96,6 +96,11 @@ assert(
 )
 
 assert(
+  wxml.includes('class="children-row" wx:if="{{activeTab !== \'notifications\' && !isChild && children.length > 1}}"'),
+  'child preview should hide the sibling switcher and only show the selected child context'
+)
+
+assert(
   /parentChildPreviewChildId: ''/.test(pageJs)
     && /previewFamilyChild\(event\)[\s\S]*?parentChildPreviewChildId: childId[\s\S]*?familySwitcherOpen: false[\s\S]*?activeTab: 'today'/.test(pageJs)
     && /returnToParentView\(\)[\s\S]*?parentChildPreviewChildId: ''[\s\S]*?activeTab: 'today'/.test(pageJs)
