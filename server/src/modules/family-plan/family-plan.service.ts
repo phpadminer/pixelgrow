@@ -593,7 +593,6 @@ export class FamilyPlanService {
         },
       },
     })
-    await this.ensureSeedData(family.familyKey)
 
     const membership = await this.getMembership(session.accountId, family.id)
     return this.toParentAuthResult(session.accountId, membership)
@@ -700,7 +699,9 @@ export class FamilyPlanService {
       })
     })
 
-    await this.ensureSeedData(invite.family.familyKey)
+    if (this.shouldSeedFamilyData(invite.family.familyKey)) {
+      await this.ensureSeedData(invite.family.familyKey)
+    }
     const membership = await this.getMembership(session.accountId, invite.familyId)
     return this.toParentAuthResult(session.accountId, membership)
   }
@@ -711,7 +712,9 @@ export class FamilyPlanService {
       return this.emptyPlan(session)
     }
     const resolvedFamilyKey = session?.familyKey || familyKey || DEFAULT_FAMILY_KEY
-    await this.ensureSeedData(resolvedFamilyKey)
+    if (this.shouldSeedFamilyData(resolvedFamilyKey)) {
+      await this.ensureSeedData(resolvedFamilyKey)
+    }
 
     const [children, courses, habits, tasks, milestones, completions, gifts, redemptions, pointLedger] = await Promise.all([
       this.prisma.familyPlanChild.findMany({ where: { familyKey: resolvedFamilyKey }, orderBy: { createdAt: 'asc' } }),
@@ -1875,6 +1878,10 @@ export class FamilyPlanService {
         }),
       ),
     ])
+  }
+
+  private shouldSeedFamilyData(familyKey: string) {
+    return familyKey === AUDIT_FAMILY_KEY || familyKey === DEFAULT_FAMILY_KEY
   }
 
   private defaultChildGrade(childKey: string) {

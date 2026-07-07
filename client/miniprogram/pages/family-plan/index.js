@@ -59,6 +59,21 @@ const CALENDAR_VIEW_OPTIONS = [
   { key: 'year', label: '年' },
 ]
 
+function emptyGuestPlan() {
+  return {
+    children: [],
+    courses: [],
+    habits: [],
+    tasks: [],
+    milestones: [],
+    completions: {},
+    gifts: [],
+    redemptions: [],
+    pointLedger: [],
+    rules: [],
+  }
+}
+
 function makeWeekdayOptions(selectedValues = []) {
   return WEEKDAY_VALUES.map((value, index) => ({
     value,
@@ -1362,11 +1377,8 @@ Page({
       let plan = null
       if (this.data.isGuest) {
         const { expired } = this.getOrCreateGuestSession()
-        plan = this.getStoredGuestPlan()
-        if (!plan) {
-          plan = await api.loadPlan(null)
-          this.storeGuestPlan(plan)
-        }
+        plan = this.getStoredGuestPlan() || emptyGuestPlan()
+        this.storeGuestPlan(plan)
         if (expired) {
           wx.showToast({ title: '游客数据已过期，已重置', icon: 'none' })
         }
