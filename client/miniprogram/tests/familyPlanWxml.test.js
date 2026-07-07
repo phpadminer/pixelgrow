@@ -4,6 +4,7 @@ const path = require('path')
 
 const wxml = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.wxml'), 'utf8')
 const pageJs = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.js'), 'utf8')
+const wxss = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.wxss'), 'utf8')
 
 assert(
   !wxml.includes('wx:for="{{lessonTypeOptions}}"'),
@@ -73,6 +74,12 @@ assert(
 assert(
   wxml.includes('guestExpiryText') && wxml.includes('3 天后自动清空'),
   'guest users should see temporary account expiry and deletion warning'
+)
+
+assert(
+  /\.list-tag[\s\S]*?flex: 0 0 142rpx[\s\S]*?white-space: nowrap/.test(wxss)
+    && /\.list-tag\.milestone[\s\S]*?font-size: 24rpx/.test(wxss),
+  'calendar milestone countdown labels should fit on one line'
 )
 
 const guestCardIndex = wxml.indexOf('class="guest-expiry-card"')

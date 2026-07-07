@@ -1565,10 +1565,12 @@ picker {
 }
 
 .list-tag {
-  flex: 0 0 110rpx;
+  flex: 0 0 142rpx;
   color: #f5a316;
   font-size: 28rpx;
   font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .list-tag.habit {
@@ -1581,6 +1583,7 @@ picker {
 
 .list-tag.milestone {
   color: #2f7fe8;
+  font-size: 24rpx;
 }
 
 .list-title {
