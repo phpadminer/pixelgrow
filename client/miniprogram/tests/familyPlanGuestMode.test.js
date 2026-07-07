@@ -1,7 +1,10 @@
 const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
 const {
   addGuestTask,
   applyGuestCompletion,
+  applyGuestCompletionReward,
   countGuestPlanData,
   createGuestSession,
   deleteGuestPlanItem,
@@ -10,6 +13,8 @@ const {
   isGuestSession,
   upsertGuestPlanItem,
 } = require('../utils/familyPlanGuestMode')
+
+const pageJs = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.js'), 'utf8')
 
 assert.strictEqual(isGuestSession(null), true)
 assert.strictEqual(isGuestSession({}), true)
@@ -47,6 +52,43 @@ assert.deepStrictEqual(cancelled['task-homework-2026-07-06'], {
   pointsDelta: 0,
   isMakeup: false,
 })
+
+const rewardPlan = {
+  children: [{ id: 'gege', points: 0 }],
+  completions: {},
+  pointLedger: [],
+}
+const rewarded = applyGuestCompletionReward(rewardPlan, {
+  itemKey: 'task-guest-task-1-2026-07-06',
+  childId: 'gege',
+  title: '体验任务',
+  completed: true,
+  isMakeup: false,
+  successPoints: 4,
+  makeupPoints: 2,
+  failurePoints: 0,
+})
+assert.strictEqual(rewarded.children[0].points, 4)
+assert.strictEqual(rewarded.completions['task-guest-task-1-2026-07-06'].pointsDelta, 4)
+assert.strictEqual(rewarded.pointLedger.length, 1)
+assert.strictEqual(rewarded.pointLedger[0].pointsDelta, 4)
+assert.strictEqual(rewarded.pointLedger[0].balanceAfter, 4)
+
+const reverted = applyGuestCompletionReward(rewarded, {
+  itemKey: 'task-guest-task-1-2026-07-06',
+  childId: 'gege',
+  title: '体验任务',
+  completed: false,
+  isMakeup: false,
+  successPoints: 4,
+  makeupPoints: 2,
+  failurePoints: 0,
+})
+assert.strictEqual(reverted.children[0].points, 0)
+assert.strictEqual(reverted.completions['task-guest-task-1-2026-07-06'].pointsDelta, 0)
+assert.strictEqual(reverted.pointLedger.length, 2)
+assert.strictEqual(reverted.pointLedger[1].pointsDelta, -4)
+assert.strictEqual(reverted.pointLedger[1].balanceAfter, 0)
 
 const tasks = [{ id: 'existing-task' }]
 const nextTasks = addGuestTask(tasks, {
@@ -125,5 +167,10 @@ const guestPlan = {
 assert.strictEqual(countGuestPlanData(guestPlan), 8)
 assert.strictEqual(hasGuestPlanData(guestPlan), true)
 assert.strictEqual(hasGuestPlanData({ children: [{ id: 'guest-child-1' }] }), true)
+
+assert(
+  /if \(this\.data\.isGuest\) \{[\s\S]*?applyGuestCompletionReward\(this\.currentGuestPlan\(\), \{[\s\S]*?successPoints: item\.successPoints[\s\S]*?this\.refreshGuestPlan\(nextPlan\)/.test(pageJs),
+  'guest completion should update child points and ledger, not only completion status'
+)
 
 console.log('familyPlanGuestMode tests passed')

@@ -17,7 +17,7 @@ const {
 const { buildNotifications } = require('../../utils/familyPlanNotifications')
 const {
   addGuestTask,
-  applyGuestCompletion,
+  applyGuestCompletionReward,
   createGuestSession,
   deleteGuestPlanItem,
   getGuestExpiryText,
@@ -1711,12 +1711,21 @@ Page({
       })
       if (!confirmed) return
       if (this.data.isGuest) {
-        const completions = applyGuestCompletion(this.data.completions, item.id, completed, { isMakeup: item.isMakeup })
+        const nextPlan = applyGuestCompletionReward(this.currentGuestPlan(), {
+          itemKey: item.id,
+          childId: item.childId,
+          title: item.title,
+          completed,
+          isMakeup: item.isMakeup,
+          successPoints: item.successPoints,
+          makeupPoints: item.makeupPoints,
+          failurePoints: item.failurePoints,
+        })
         wx.showToast({
-          title: completed ? '体验完成，本地临时' : '已取消体验完成',
+          title: completed ? `体验完成 +${points}` : '已取消体验完成',
           icon: 'none',
         })
-        this.refreshGuestPlan({ completions })
+        this.refreshGuestPlan(nextPlan)
         return
       }
       await api.updateCompletion(item.id, completed, this.data.session, { isMakeup: item.isMakeup })

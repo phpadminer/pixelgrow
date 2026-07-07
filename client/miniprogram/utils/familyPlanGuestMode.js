@@ -29,9 +29,50 @@ function applyGuestCompletion(completions, itemKey, completed, options = {}) {
     [itemKey]: {
       completed: Boolean(completed),
       status: 'confirmed',
-      pointsDelta: 0,
+      pointsDelta: Number(options.pointsDelta || 0),
       isMakeup: Boolean(options.isMakeup),
     },
+  })
+}
+
+function applyGuestCompletionReward(plan, options = {}) {
+  const itemKey = options.itemKey
+  const childId = options.childId
+  const existing = (plan.completions || {})[itemKey] || null
+  const nextPointsDelta = options.completed
+    ? Number(options.isMakeup ? options.makeupPoints || 0 : options.successPoints || 0)
+    : Number(options.failurePoints || 0)
+  const childPointsDelta = nextPointsDelta - Number(existing && existing.pointsDelta || 0)
+  const children = (plan.children || []).map((child) => {
+    if (child.id !== childId) return child
+    return Object.assign({}, child, {
+      points: Math.max(0, Number(child.points || 0) + childPointsDelta),
+    })
+  })
+  const targetChild = children.find((child) => child.id === childId)
+  const completions = applyGuestCompletion(plan.completions, itemKey, Boolean(options.completed), {
+    isMakeup: Boolean(options.isMakeup),
+    pointsDelta: nextPointsDelta,
+  })
+  const pointLedger = (plan.pointLedger || []).slice()
+  if (childPointsDelta !== 0) {
+    pointLedger.push({
+      id: `guest-ledger-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      childId,
+      sourceType: 'completion',
+      sourceId: itemKey,
+      pointsDelta: childPointsDelta,
+      balanceAfter: targetChild ? Number(targetChild.points || 0) : Math.max(0, childPointsDelta),
+      note: options.completed
+        ? `${options.isMakeup ? '补卡完成' : '完成项目'}：${options.title || '体验项目'}`
+        : `调整完成：${options.title || '体验项目'}`,
+      createdAt: new Date().toISOString(),
+    })
+  }
+  return Object.assign({}, plan, {
+    children,
+    completions,
+    pointLedger,
   })
 }
 
@@ -88,6 +129,7 @@ module.exports = {
   GUEST_MODE_TTL_MS,
   addGuestTask,
   applyGuestCompletion,
+  applyGuestCompletionReward,
   countGuestPlanData,
   createGuestSession,
   deleteGuestPlanItem,
