@@ -13,8 +13,9 @@ assert(
 )
 
 assert(
-  /onLoad\(options = \{\}\)[\s\S]*?if \(!session && !guestSession\) \{[\s\S]*?this\.restoreWechatSessionOnStart\(\)[\s\S]*?return/.test(pageJs),
-  'first launch should try to restore an existing WeChat account before showing the start choice'
+  /runAfterFirstRender\(callback\)[\s\S]*?wx\.nextTick\(run\)[\s\S]*?setTimeout\(run, 0\)/.test(pageJs)
+    && /onLoad\(options = \{\}\)[\s\S]*?this\.runAfterFirstRender\(\(\) => \{[\s\S]*?if \(!session && !guestSession\) \{[\s\S]*?this\.restoreWechatSessionOnStart\(\)[\s\S]*?return[\s\S]*?this\.fetchPlan\(\)/.test(pageJs),
+  'first launch should defer restore or data loading until after the first render'
 )
 
 assert(

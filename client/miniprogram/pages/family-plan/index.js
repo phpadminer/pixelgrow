@@ -918,15 +918,28 @@ Page({
       joinFamilyFormOpen: Boolean(inviteCode && session && session.account),
       inviteCode,
     })
-    if (!session && !guestSession) {
-      this.restoreWechatSessionOnStart()
-      return
-    }
-    this.fetchPlan()
+    this.runAfterFirstRender(() => {
+      if (!session && !guestSession) {
+        this.restoreWechatSessionOnStart()
+        return
+      }
+      this.fetchPlan()
+    })
   },
 
   onUnload() {
     this.clearTimer()
+  },
+
+  runAfterFirstRender(callback) {
+    const run = () => {
+      if (typeof callback === 'function') callback()
+    }
+    if (wx.nextTick) {
+      wx.nextTick(run)
+      return
+    }
+    setTimeout(run, 0)
   },
 
   onShareAppMessage() {
