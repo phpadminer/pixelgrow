@@ -837,7 +837,7 @@ Page({
       customNavPadding: getCustomNavPadding(),
     })
     if (!session && !guestSession) {
-      this.setData({ startChoiceOpen: true })
+      this.restoreWechatSessionOnStart()
       return
     }
     this.fetchPlan()
@@ -940,22 +940,48 @@ Page({
     }, extraPatch))
   },
 
+  getWechatLoginCode() {
+    return new Promise((resolve, reject) => {
+      wx.login({
+        success: (res) => {
+          if (res && res.code) {
+            resolve(res.code)
+            return
+          }
+          reject(new Error('微信登录失败'))
+        },
+        fail: reject,
+      })
+    })
+  },
+
+  async restoreWechatSessionOnStart() {
+    this.setData({ loading: true })
+    try {
+      const code = await this.getWechatLoginCode()
+      const session = await api.restoreWechatSession({ code })
+      if (session && session.token) {
+        this.applySession(session, {
+          selectedChildId: session.childId || '',
+        })
+        await this.fetchPlan()
+        return
+      }
+      this.setData({ startChoiceOpen: true })
+    } catch (err) {
+      this.setData({ startChoiceOpen: true })
+    } finally {
+      if (!this.data.session) {
+        this.setData({ loading: false })
+      }
+    }
+  },
+
   async loginWithWechat() {
     const pendingGuestPlan = this.getStoredGuestPlan()
     this.setData({ loading: true })
     try {
-      const code = await new Promise((resolve, reject) => {
-        wx.login({
-          success: (res) => {
-            if (res && res.code) {
-              resolve(res.code)
-              return
-            }
-            reject(new Error('微信登录失败'))
-          },
-          fail: reject,
-        })
-      })
+      const code = await this.getWechatLoginCode()
       const session = await api.loginWechat({
         code,
         nickname: String(this.data.accountNickname || '').trim(),

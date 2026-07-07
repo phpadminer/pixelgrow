@@ -472,23 +472,7 @@ function serializeFamilyMembership(member) {
 export class FamilyPlanService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async loginWechat(dto: WechatFamilyPlanLoginDto) {
-    const wechatOpenId = await this.exchangeCodeForOpenId(dto.code)
-    const legacyUser = await this.prisma.user.findUnique({ where: { openId: wechatOpenId } })
-    const account = await this.prisma.familyPlanAccount.upsert({
-      where: { wechatOpenId },
-      update: {
-        ...(legacyUser?.id && { legacyUserId: legacyUser.id }),
-        ...(dto.nickname !== undefined && { nickname: dto.nickname.trim() || null }),
-        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
-      },
-      create: {
-        wechatOpenId,
-        legacyUserId: legacyUser?.id,
-        nickname: dto.nickname?.trim() || legacyUser?.name || '微信用户',
-        avatarUrl: dto.avatarUrl || legacyUser?.avatar,
-      },
-    })
+  private async buildWechatParentSession(account) {
     const families = await this.getFamilyMemberships(account.id)
     const activeFamily = families[0] || null
     const token = signSession(activeFamily
@@ -516,6 +500,46 @@ export class FamilyPlanService {
       familyKey: activeFamily?.familyKey || '',
       name: account.nickname || '家长',
     }
+  }
+
+  async restoreWechatSession(dto: WechatFamilyPlanLoginDto) {
+    const wechatOpenId = await this.exchangeCodeForOpenId(dto.code)
+    const legacyUser = await this.prisma.user.findUnique({ where: { openId: wechatOpenId } })
+    let account = await this.prisma.familyPlanAccount.findUnique({ where: { wechatOpenId } })
+    if (!account && !legacyUser) {
+      return { session: null }
+    }
+    if (!account && legacyUser) {
+      account = await this.prisma.familyPlanAccount.create({
+        data: {
+          wechatOpenId,
+          legacyUserId: legacyUser.id,
+          nickname: legacyUser.name || '微信用户',
+          avatarUrl: legacyUser.avatar,
+        },
+      })
+    }
+    return this.buildWechatParentSession(account)
+  }
+
+  async loginWechat(dto: WechatFamilyPlanLoginDto) {
+    const wechatOpenId = await this.exchangeCodeForOpenId(dto.code)
+    const legacyUser = await this.prisma.user.findUnique({ where: { openId: wechatOpenId } })
+    const account = await this.prisma.familyPlanAccount.upsert({
+      where: { wechatOpenId },
+      update: {
+        ...(legacyUser?.id && { legacyUserId: legacyUser.id }),
+        ...(dto.nickname !== undefined && { nickname: dto.nickname.trim() || null }),
+        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+      },
+      create: {
+        wechatOpenId,
+        legacyUserId: legacyUser?.id,
+        nickname: dto.nickname?.trim() || legacyUser?.name || '微信用户',
+        avatarUrl: dto.avatarUrl || legacyUser?.avatar,
+      },
+    })
+    return this.buildWechatParentSession(account)
   }
 
   async loginParent(dto: ParentLoginDto) {

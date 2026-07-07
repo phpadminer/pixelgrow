@@ -35,6 +35,11 @@ export class FamilyPlanController {
     return this.familyPlanService.loginWechat(dto)
   }
 
+  @Post('auth/wechat/restore')
+  restoreWechatSession(@Body() dto: WechatFamilyPlanLoginDto) {
+    return this.familyPlanService.restoreWechatSession(dto)
+  }
+
   @Post('auth/parent')
   loginParent(@Body() dto: ParentLoginDto) {
     return this.familyPlanService.loginParent(dto)

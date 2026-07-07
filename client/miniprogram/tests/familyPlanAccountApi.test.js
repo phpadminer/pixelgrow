@@ -48,6 +48,14 @@ async function run() {
     options: { skipAuth: true },
   })
 
+  await api.restoreWechatSession({ code: 'restore-code' })
+  assert.deepStrictEqual(calls.pop(), {
+    method: 'POST',
+    url: '/family-plan/auth/wechat/restore',
+    data: { code: 'restore-code' },
+    options: { skipAuth: true },
+  })
+
   await api.createFamily({ name: '顾家' }, session)
   const createFamilyCall = calls.pop()
   assert.strictEqual(createFamilyCall.url, '/family-plan/families')

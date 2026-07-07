@@ -32,6 +32,10 @@ function loginWechat(payload) {
   return request.post('/family-plan/auth/wechat', payload, { skipAuth: true })
 }
 
+function restoreWechatSession(payload) {
+  return request.post('/family-plan/auth/wechat/restore', payload, { skipAuth: true })
+}
+
 function listFamilies(session) {
   return request.get('/family-plan/families', {}, getAuthOptions(session))
 }
@@ -165,6 +169,7 @@ module.exports = {
   loginParent,
   loginChild,
   loginWechat,
+  restoreWechatSession,
   listFamilies,
   createFamily,
   createInvite,
