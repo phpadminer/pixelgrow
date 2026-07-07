@@ -60,6 +60,11 @@ assert(
 )
 
 assert(
+  !wxml.includes('AUDIT2026'),
+  'main login helper should not expose a fixed audit invite code'
+)
+
+assert(
   wxml.includes('数据临时'),
   'guest mode copy should make temporary data explicit'
 )

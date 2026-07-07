@@ -481,7 +481,7 @@
         <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="loginWithWechat">微信登录</button>
       </view>
 
-      <view class="helper-text">游客模式：关闭弹窗继续体验，数据临时，不保存到家庭。审核体验：家长微信登录后输入邀请码 AUDIT2026。</view>
+      <view class="helper-text">游客模式：关闭弹窗继续体验，数据临时，不保存到家庭。需要长期保存时，再微信登录并创建家庭。</view>
     </view>
   </view>
 
@@ -551,7 +551,7 @@
         <button class="ghost-button" bindtap="closeJoinFamilyForm">关闭</button>
       </view>
       <view class="field-label">邀请码</view>
-      <input class="text-input" data-field="inviteCode" value="{{inviteCode}}" bindinput="onFamilyInput" placeholder="例如：AUDIT2026" />
+      <input class="text-input" data-field="inviteCode" value="{{inviteCode}}" bindinput="onFamilyInput" placeholder="输入家人发来的邀请码" />
       <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitJoinFamily">加入家庭</button>
     </view>
   </view>
