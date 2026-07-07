@@ -57,8 +57,15 @@ assert(
   wxml.includes('bindtap="createChildBindInvite"')
     && wxml.includes('绑定微信')
     && wxml.includes('邀请家长')
+    && wxml.includes('wx:if="{{item.canBindWechat}}"')
     && !wxml.includes('邀请管理员'),
   'family management should expose parent invite and child WeChat binding without admin invite UI'
+)
+
+assert(
+  /canBindWechat: !isBound/.test(pageJs)
+    && !wxml.includes("!== 'bound'"),
+  'child bind visibility should be precomputed in JS instead of using strict comparison in WXML'
 )
 
 assert(

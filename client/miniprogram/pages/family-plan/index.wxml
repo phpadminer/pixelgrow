@@ -589,7 +589,7 @@
             <view class="muted">{{item.grade}} · {{item.points}} 积分 · {{item.bindStatusText}}</view>
           </view>
           <button
-            wx:if="{{item.bindStatus !== 'bound'}}"
+            wx:if="{{item.canBindWechat}}"
             class="secondary-button mini family-child-bind-button"
             data-child-key="{{item.childKey}}"
             loading="{{loading}}"

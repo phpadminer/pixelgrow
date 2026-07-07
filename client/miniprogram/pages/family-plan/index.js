@@ -249,9 +249,11 @@ function decorateFamilyMember(member) {
 }
 
 function decorateFamilyManagedChild(child) {
+  const isBound = child.bindStatus === 'bound'
   return Object.assign({}, child, {
     avatarPath: getAvatarPath(child.avatar),
-    bindStatusText: child.bindStatus === 'bound' ? '已绑定微信' : '未绑定微信',
+    bindStatusText: isBound ? '已绑定微信' : '未绑定微信',
+    canBindWechat: !isBound,
   })
 }
 
