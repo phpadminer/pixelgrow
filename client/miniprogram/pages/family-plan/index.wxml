@@ -631,7 +631,7 @@
   </view>
 
   <view wx:if="{{createFamilyFormOpen}}" class="modal-mask">
-    <view class="sheet family-sheet">
+    <view class="sheet family-form-sheet">
       <view class="sheet-head">
         <view>
           <view class="eyebrow">创建</view>
@@ -646,7 +646,7 @@
   </view>
 
   <view wx:if="{{joinFamilyFormOpen}}" class="modal-mask">
-    <view class="sheet family-sheet">
+    <view class="sheet family-form-sheet">
       <view class="sheet-head">
         <view>
           <view class="eyebrow">加入</view>
@@ -656,6 +656,7 @@
       </view>
       <view class="field-label">邀请码</view>
       <input class="text-input" data-field="inviteCode" value="{{inviteCode}}" bindinput="onFamilyInput" placeholder="输入家人发来的邀请码" />
+      <view class="helper-text family-form-helper">邀请码已包含身份，加入后直接进入对应家庭。</view>
       <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitJoinFamily">加入家庭</button>
     </view>
   </view>

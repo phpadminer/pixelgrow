@@ -34,6 +34,12 @@ assert(
 )
 
 assert(
+  wxml.includes('class="sheet family-form-sheet"')
+    && wxml.includes('邀请码已包含身份，加入后直接进入对应家庭。'),
+  'join and create family forms should use compact sheets and explain invite role handling'
+)
+
+assert(
   /async loadFamilyManagementInfo\(\)[\s\S]*?api\.getCurrentFamilyMembers/.test(pageJs)
     && /async openFamilySwitcher\(\)[\s\S]*?await this\.loadFamilies\(\)[\s\S]*?await this\.loadFamilyManagementInfo\(\)/.test(pageJs),
   'family management sheet should load member details when opened'
@@ -47,7 +53,8 @@ assert(
 assert(
   wxss.includes('.family-manage-card')
     && wxss.includes('.family-member-row')
-    && wxss.includes('.family-child-row'),
+    && wxss.includes('.family-child-row')
+    && wxss.includes('.family-form-sheet'),
   'family management UI should have warm styled member rows'
 )
 

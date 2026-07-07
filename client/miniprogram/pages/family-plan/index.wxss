@@ -2208,6 +2208,14 @@ picker {
   box-shadow: 0 -28rpx 70rpx rgba(57, 48, 31, 0.18);
 }
 
+.family-form-sheet {
+  padding: 34rpx 34rpx calc(44rpx + env(safe-area-inset-bottom));
+}
+
+.family-form-helper {
+  margin: 16rpx 0 0;
+}
+
 .start-choice-sheet {
   max-width: 720rpx;
   padding: 42rpx 34rpx calc(52rpx + env(safe-area-inset-bottom));
