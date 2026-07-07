@@ -474,6 +474,26 @@
     </view>
   </block>
 
+  <view wx:if="{{startChoiceOpen}}" class="modal-mask start-choice-mask">
+    <view class="sheet start-choice-sheet">
+      <view class="start-choice-head">
+        <view class="eyebrow">开始使用</view>
+        <view class="sheet-title">选择使用方式</view>
+        <view class="helper-text">先体验不需要授权。需要长期保存时，再微信登录并创建家庭。</view>
+      </view>
+      <view class="start-choice-actions">
+        <button class="secondary-button start-choice-button" bindtap="chooseGuestMode">
+          <view class="choice-title">游客体验</view>
+          <view class="choice-desc">本地临时数据，3 天后自动清空</view>
+        </button>
+        <button class="primary-button start-choice-button" bindtap="chooseLoginMode">
+          <view class="choice-title">登录使用</view>
+          <view class="choice-desc">创建或加入家庭，数据长期保存</view>
+        </button>
+      </view>
+    </view>
+  </view>
+
   <view wx:if="{{loginFormOpen}}" class="modal-mask">
     <view class="sheet login-sheet">
       <view class="sheet-head">

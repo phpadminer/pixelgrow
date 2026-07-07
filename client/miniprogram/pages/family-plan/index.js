@@ -708,6 +708,7 @@ Page({
     isParent: false,
     isChild: false,
     roleLabel: getRoleLabel('guest'),
+    startChoiceOpen: false,
     loginFormOpen: false,
     loading: false,
     today: todayString(),
@@ -803,6 +804,7 @@ Page({
 
   onLoad() {
     const session = wx.getStorageSync(SESSION_KEY) || null
+    const guestSession = wx.getStorageSync(GUEST_SESSION_KEY) || null
     const role = session && session.role ? session.role : 'guest'
     const activeFamily = getActiveFamily(session)
     const today = todayString()
@@ -826,6 +828,10 @@ Page({
       guestNoticeDismissed: Boolean(wx.getStorageSync(GUEST_NOTICE_DISMISSED_KEY)),
       customNavPadding: getCustomNavPadding(),
     })
+    if (!session && !guestSession) {
+      this.setData({ startChoiceOpen: true })
+      return
+    }
     this.fetchPlan()
   },
 
@@ -856,7 +862,34 @@ Page({
   },
 
   closeLoginForm() {
+    if (!this.data.session && !this.data.guestSession && !wx.getStorageSync(GUEST_SESSION_KEY)) {
+      this.chooseGuestMode()
+      return
+    }
     this.setData({ loginFormOpen: false })
+  },
+
+  chooseGuestMode() {
+    this.setData({
+      startChoiceOpen: false,
+      loginFormOpen: false,
+      isLoggedIn: true,
+      isGuest: true,
+      isParent: false,
+      isChild: false,
+      roleLabel: getRoleLabel('guest'),
+      tabs: getTabsForRole('guest'),
+      pageTitle: getPageTitle('guest', 'today'),
+      familyTitle: '体验家庭',
+    })
+    this.fetchPlan()
+  },
+
+  chooseLoginMode() {
+    this.setData({
+      startChoiceOpen: false,
+      loginFormOpen: true,
+    })
   },
 
   applySession(session, extraPatch = {}) {
@@ -875,6 +908,7 @@ Page({
       isParent: role === 'parent',
       isChild: role === 'child',
       roleLabel: getRoleLabel(role),
+      startChoiceOpen: false,
       tabs: getTabsForRole(role),
       activeTab: 'today',
       pageTitle: getPageTitle(role, 'today'),
@@ -958,21 +992,33 @@ Page({
       families: [],
       activeFamily: null,
       familyTitle: '体验家庭',
-      selectedChildId: '',
       activeTab: 'today',
       tabs: PARENT_TABS,
       pageTitle: getPageTitle('guest', 'today'),
       roleLabel: getRoleLabel('guest'),
+      startChoiceOpen: true,
       loginFormOpen: false,
       familySwitcherOpen: false,
       createFamilyFormOpen: false,
       joinFamilyFormOpen: false,
       pendingGuestSavePlan: null,
       inviteInfo: null,
+      children: [],
+      selectedChildId: '',
+      selectedChild: null,
+      selectedChildPoints: 0,
+      courses: [],
+      habits: [],
+      tasks: [],
+      milestones: [],
+      completions: {},
+      gifts: [],
+      redemptions: [],
+      pointLedger: [],
+      rules: [],
       notifications: [],
       notificationCount: 0,
     })
-    this.fetchPlan()
   },
 
   getOrCreateGuestSession() {
