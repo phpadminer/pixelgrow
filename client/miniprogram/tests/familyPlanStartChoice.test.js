@@ -15,7 +15,7 @@ assert(
 )
 
 assert(
-  /onLoad\(\)[\s\S]*?if \(!session && !guestSession\) \{[\s\S]*?startChoiceOpen: true[\s\S]*?return[\s\S]*?\}[\s\S]*?this\.fetchPlan\(\)/.test(pageJs),
+  /onLoad\(options = \{\}\)[\s\S]*?if \(!session && !guestSession\) \{[\s\S]*?startChoiceOpen: true[\s\S]*?return[\s\S]*?\}[\s\S]*?this\.fetchPlan\(\)/.test(pageJs),
   'first entry without a session should show the choice screen and avoid creating guest data immediately'
 )
 

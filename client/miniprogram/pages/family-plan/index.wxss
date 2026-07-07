@@ -2383,6 +2383,75 @@ picker {
   font-weight: 900;
 }
 
+.family-manage-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-bottom: 22rpx;
+  padding: 22rpx;
+  border: 2rpx solid rgba(245, 163, 22, 0.28);
+  border-radius: 20rpx;
+  background: rgba(255, 248, 232, 0.82);
+}
+
+.family-manage-title {
+  margin: 8rpx 0;
+  color: #101820;
+  font-size: 34rpx;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.family-manage-section {
+  margin-top: 22rpx;
+}
+
+.family-member-row,
+.family-child-row {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  min-height: 92rpx;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid rgba(84, 111, 106, 0.1);
+}
+
+.family-member-row:last-child,
+.family-child-row:last-child {
+  border-bottom: 0;
+}
+
+.family-member-avatar {
+  flex: 0 0 auto;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 244, 207, 0.9);
+}
+
+.family-member-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d8870c;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.family-member-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.family-member-name {
+  margin-bottom: 6rpx;
+  color: #101820;
+  font-size: 28rpx;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
 .family-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2391,8 +2460,8 @@ picker {
 }
 
 .family-actions.inline {
-  min-width: 320rpx;
-  margin-top: 0;
+  min-width: 0;
+  margin-top: 16rpx;
 }
 
 .family-empty-card {

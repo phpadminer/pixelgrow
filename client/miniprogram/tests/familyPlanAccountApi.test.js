@@ -56,6 +56,12 @@ async function run() {
     options: { skipAuth: true },
   })
 
+  await api.getCurrentFamilyMembers(session)
+  const membersCall = calls.pop()
+  assert.strictEqual(membersCall.method, 'GET')
+  assert.strictEqual(membersCall.url, '/family-plan/families/current/members')
+  assert.strictEqual(membersCall.options.header.Authorization, 'Bearer token-1')
+
   await api.createFamily({ name: '顾家' }, session)
   const createFamilyCall = calls.pop()
   assert.strictEqual(createFamilyCall.url, '/family-plan/families')

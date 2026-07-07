@@ -55,6 +55,11 @@ export class FamilyPlanController {
     return this.familyPlanService.listFamilies(authorization)
   }
 
+  @Get('families/current/members')
+  getCurrentFamilyMembers(@Headers('authorization') authorization?: string) {
+    return this.familyPlanService.getCurrentFamilyMembers(authorization)
+  }
+
   @Post('families')
   createFamily(@Body() dto: CreateFamilyPlanFamilyDto, @Headers('authorization') authorization?: string) {
     return this.familyPlanService.createFamily(dto, authorization)

@@ -601,6 +601,56 @@ export class FamilyPlanService {
     }
   }
 
+  async getCurrentFamilyMembers(authorization?: string) {
+    const session = this.requireActiveFamilySession(authorization)
+    const membership = await this.getMembership(session.accountId, session.familyId)
+    const [members, children] = await Promise.all([
+      this.prisma.familyPlanFamilyMember.findMany({
+        where: {
+          familyId: session.familyId,
+          status: 'active',
+        },
+        include: {
+          account: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      }),
+      this.prisma.familyPlanChild.findMany({
+        where: {
+          familyKey: session.familyKey,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      }),
+    ])
+    return {
+      family: serializeFamilyMembership(membership),
+      members: members.map((member) => ({
+        id: member.id,
+        accountId: member.accountId,
+        role: member.role,
+        status: member.status,
+        nickname: member.account.nickname || '微信用户',
+        avatarUrl: member.account.avatarUrl || '',
+        isCurrentAccount: member.accountId === session.accountId,
+        createdAt: member.createdAt,
+      })),
+      children: children.map((child) => ({
+        id: child.id,
+        childKey: child.childKey,
+        childCode: child.childCode,
+        name: child.name,
+        avatar: child.avatar,
+        grade: child.grade,
+        points: child.points,
+        bindStatus: 'unbound',
+      })),
+    }
+  }
+
   async createFamily(dto: CreateFamilyPlanFamilyDto, authorization?: string) {
     const session = this.requireAccountSession(authorization)
     const familyKey = await this.createUniqueFamilyKey()

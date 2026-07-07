@@ -20,7 +20,7 @@ assert(
 )
 
 assert(
-  /onLoad\(\)[\s\S]*?familySwitcherOpen: shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
+  /onLoad\(options = \{\}\)[\s\S]*?familySwitcherOpen: shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
     && /restoreWechatSessionOnStart\(\)[\s\S]*?this\.applySession\(session, \{[\s\S]*?familySwitcherOpen: shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
     && /loginWithWechat\(\)[\s\S]*?this\.applySession\(session, \{[\s\S]*?familySwitcherOpen: shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs),
   'cached, restored, and explicit WeChat logins should open the family chooser when families exist'

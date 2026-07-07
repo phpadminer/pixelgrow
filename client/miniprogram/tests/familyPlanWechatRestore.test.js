@@ -13,7 +13,7 @@ assert(
 )
 
 assert(
-  /onLoad\(\)[\s\S]*?if \(!session && !guestSession\) \{[\s\S]*?this\.restoreWechatSessionOnStart\(\)[\s\S]*?return/.test(pageJs),
+  /onLoad\(options = \{\}\)[\s\S]*?if \(!session && !guestSession\) \{[\s\S]*?this\.restoreWechatSessionOnStart\(\)[\s\S]*?return/.test(pageJs),
   'first launch should try to restore an existing WeChat account before showing the start choice'
 )
 

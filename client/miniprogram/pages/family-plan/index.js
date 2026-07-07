@@ -217,6 +217,44 @@ function getRoleLabel(role) {
   return '体验模式'
 }
 
+function getFamilyMemberRoleLabel(role) {
+  if (role === 'owner') return '创建者'
+  if (role === 'admin') return '管理员'
+  if (role === 'viewer') return '只读成员'
+  return '家长成员'
+}
+
+function getAccountInitial(name) {
+  const value = String(name || '微').trim()
+  return value ? value.slice(0, 1) : '微'
+}
+
+function decodeInviteCode(value) {
+  if (!value) return ''
+  try {
+    return decodeURIComponent(value)
+  } catch (err) {
+    return String(value)
+  }
+}
+
+function decorateFamilyMember(member) {
+  const nickname = member.nickname || '微信用户'
+  return Object.assign({}, member, {
+    nickname,
+    roleLabel: getFamilyMemberRoleLabel(member.role),
+    avatarText: getAccountInitial(nickname),
+    currentText: member.isCurrentAccount ? '当前账号' : '',
+  })
+}
+
+function decorateFamilyManagedChild(child) {
+  return Object.assign({}, child, {
+    avatarPath: getAvatarPath(child.avatar),
+    bindStatusText: child.bindStatus === 'bound' ? '已绑定微信' : '未绑定微信',
+  })
+}
+
 function shouldOpenFamilySwitcherOnEntry(session) {
   return Boolean(
     session
@@ -730,6 +768,9 @@ Page({
     familyName: '我的家庭',
     inviteCode: '',
     inviteInfo: null,
+    familyManageFamily: null,
+    familyMembers: [],
+    familyManagedChildren: [],
     isLoggedIn: true,
     isGuest: true,
     isParent: false,
@@ -829,12 +870,13 @@ Page({
     customNavPadding: 88,
   },
 
-  onLoad() {
+  onLoad(options = {}) {
     const session = wx.getStorageSync(SESSION_KEY) || null
     const guestSession = wx.getStorageSync(GUEST_SESSION_KEY) || null
     const role = session && session.role ? session.role : 'guest'
     const activeFamily = getActiveFamily(session)
     const today = todayString()
+    const inviteCode = decodeInviteCode(options && options.inviteCode)
     this.setData({
       session,
       account: session && session.account ? session.account : null,
@@ -856,6 +898,8 @@ Page({
       guestNoticeDismissed: Boolean(wx.getStorageSync(GUEST_NOTICE_DISMISSED_KEY)),
       customNavPadding: getCustomNavPadding(),
       familySwitcherOpen: shouldOpenFamilySwitcherOnEntry(session),
+      joinFamilyFormOpen: Boolean(inviteCode && session && session.account),
+      inviteCode,
     })
     if (!session && !guestSession) {
       this.restoreWechatSessionOnStart()
@@ -866,6 +910,20 @@ Page({
 
   onUnload() {
     this.clearTimer()
+  },
+
+  onShareAppMessage() {
+    const inviteInfo = this.data.inviteInfo
+    if (inviteInfo && inviteInfo.inviteCode) {
+      return {
+        title: `${inviteInfo.familyName || '我的家庭'} 邀请你加入伴学点滴`,
+        path: `/pages/family-plan/index?inviteCode=${encodeURIComponent(inviteInfo.inviteCode)}`,
+      }
+    }
+    return {
+      title: '伴学点滴家庭计划',
+      path: '/pages/family-plan/index',
+    }
   },
 
   switchLoginRole(event) {
@@ -1443,6 +1501,23 @@ Page({
     })
   },
 
+  async loadFamilyManagementInfo() {
+    if (!this.data.session || !this.data.activeFamily) {
+      this.setData({
+        familyManageFamily: null,
+        familyMembers: [],
+        familyManagedChildren: [],
+      })
+      return
+    }
+    const result = await api.getCurrentFamilyMembers(this.data.session)
+    this.setData({
+      familyManageFamily: result.family || this.data.activeFamily,
+      familyMembers: (result.members || []).map(decorateFamilyMember),
+      familyManagedChildren: (result.children || []).map(decorateFamilyManagedChild),
+    })
+  },
+
   async openFamilySwitcher() {
     if (!this.data.account) {
       this.openLoginForm()
@@ -1450,6 +1525,7 @@ Page({
     }
     try {
       await this.loadFamilies()
+      await this.loadFamilyManagementInfo()
     } catch (err) {
       this.showError(err, '家庭列表加载失败')
       return
@@ -1459,6 +1535,27 @@ Page({
 
   closeFamilySwitcher() {
     this.setData({ familySwitcherOpen: false, inviteInfo: null })
+  },
+
+  copyFamilyKey() {
+    const family = this.data.familyManageFamily || this.data.activeFamily
+    if (!family || !family.familyKey) {
+      wx.showToast({ title: '暂无家庭 ID', icon: 'none' })
+      return
+    }
+    if (wx.setClipboardData) {
+      wx.setClipboardData({ data: family.familyKey })
+    }
+  },
+
+  copyInviteCode() {
+    if (!this.data.inviteInfo || !this.data.inviteInfo.inviteCode) {
+      wx.showToast({ title: '请先生成邀请码', icon: 'none' })
+      return
+    }
+    if (wx.setClipboardData) {
+      wx.setClipboardData({ data: this.data.inviteInfo.inviteCode })
+    }
   },
 
   openCreateFamilyForm() {
@@ -1549,6 +1646,7 @@ Page({
       const session = await api.switchFamily(familyId, this.data.session)
       this.applySession(session)
       await this.fetchPlan()
+      await this.loadFamilyManagementInfo()
       const saved = await this.savePendingGuestPlanAfterFamilySetup(pendingGuestPlan)
       if (saved === false) wx.showToast({ title: '已切换家庭', icon: 'success' })
     } catch (err) {

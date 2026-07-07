@@ -21,7 +21,7 @@
           <view class="page-title">{{pageTitle}}</view>
           <button wx:if="{{isParent && account}}" class="family-status" bindtap="openFamilySwitcher">
             <text>{{familyTitle}}</text>
-            <text class="family-status-action">切换</text>
+            <text class="family-status-action">管理</text>
           </button>
         </view>
         <view class="header-actions">
@@ -546,11 +546,55 @@
       <view class="sheet-head">
         <view>
           <view class="eyebrow">家庭</view>
-          <view class="sheet-title">选择家庭</view>
+          <view class="sheet-title">家庭管理</view>
         </view>
         <button class="ghost-button" bindtap="closeFamilySwitcher">关闭</button>
       </view>
 
+      <view wx:if="{{familyManageFamily}}" class="family-manage-card">
+        <view>
+          <view class="field-label">当前家庭</view>
+          <view class="family-manage-title">{{familyManageFamily.name}}</view>
+          <view class="helper-text">家庭 ID：{{familyManageFamily.familyKey}}</view>
+        </view>
+        <button class="secondary-button compact" bindtap="copyFamilyKey">复制 ID</button>
+      </view>
+
+      <view wx:if="{{familyMembers.length > 0}}" class="family-manage-section">
+        <view class="field-label">已绑定微信家人</view>
+        <view
+          wx:for="{{familyMembers}}"
+          wx:key="id"
+          class="family-member-row"
+        >
+          <image wx:if="{{item.avatarUrl}}" class="family-member-avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+          <view wx:else class="family-member-avatar placeholder">{{item.avatarText}}</view>
+          <view class="family-member-main">
+            <view class="family-member-name">{{item.nickname}}</view>
+            <view class="muted">{{item.roleLabel}} {{item.currentText}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{familyManagedChildren.length > 0}}" class="family-manage-section">
+        <view class="field-label">孩子账号</view>
+        <view
+          wx:for="{{familyManagedChildren}}"
+          wx:key="childKey"
+          class="family-child-row"
+        >
+          <image class="family-member-avatar" src="{{item.avatarPath}}" mode="aspectFit" />
+          <view class="family-member-main">
+            <view class="family-member-name">{{item.name}}</view>
+            <view class="muted">{{item.grade}} · {{item.points}} 积分 · {{item.bindStatusText}}</view>
+          </view>
+        </view>
+        <view class="helper-text">孩子后续可以绑定微信；现在先保留系统孩子账号。</view>
+      </view>
+
+      <view class="family-manage-section">
+        <view class="field-label">切换家庭</view>
+      </view>
       <view class="family-list" wx:if="{{families.length > 0}}">
         <view
           wx:for="{{families}}"
@@ -573,11 +617,15 @@
         <button class="primary-button" bindtap="openCreateFamilyForm">创建家庭</button>
       </view>
 
-      <button wx:if="{{activeFamily}}" class="secondary-button full" loading="{{loading}}" bindtap="createFamilyInvite">生成邀请码</button>
+      <button wx:if="{{activeFamily}}" class="secondary-button full" loading="{{loading}}" bindtap="createFamilyInvite">生成家人邀请码</button>
       <view wx:if="{{inviteInfo}}" class="invite-box">
         <view class="field-label">邀请码</view>
         <view class="invite-code">{{inviteInfo.inviteCode}}</view>
-        <view class="helper-text">已复制到剪贴板，可发给家人加入 {{inviteInfo.familyName}}</view>
+        <view class="helper-text">已复制到剪贴板，也可以直接微信分享给家人。</view>
+        <view class="family-actions inline">
+          <button class="secondary-button" bindtap="copyInviteCode">复制邀请码</button>
+          <button class="primary-button" open-type="share">微信邀请</button>
+        </view>
       </view>
     </view>
   </view>
