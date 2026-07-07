@@ -85,6 +85,15 @@ function defaultGuestChild() {
   }
 }
 
+function isDefaultGuestChild(child) {
+  return Boolean(child)
+    && typeof child.id === 'string'
+    && child.id.startsWith('guest-child-')
+    && child.name === '我的孩子'
+    && (child.avatar || 'lamb') === 'lamb'
+    && (child.grade || '一年级') === '一年级'
+}
+
 function makeWeekdayOptions(selectedValues = []) {
   return WEEKDAY_VALUES.map((value, index) => ({
     value,
@@ -1220,11 +1229,17 @@ Page({
     const findExistingImportItem = (items, targetKey, makeKey) => (items || []).find((item) => makeKey(item) === targetKey) || null
     const childIdMap = {}
     const makeChildKey = (child) => makeImportKey(child.name, child.grade, child.avatar)
+    const firstFamilyChildId = familyChildren[0] ? familyChildren[0].id : ''
+    const selectedFamilyChildId = familyChildren.some((child) => child.id === this.data.selectedChildId) ? this.data.selectedChildId : ''
     for (let index = 0; index < (plan.children || []).length; index += 1) {
       const child = plan.children[index]
       const existingChild = findExistingImportItem(familyChildren, makeChildKey(child), makeChildKey)
       if (existingChild) {
         childIdMap[child.id] = existingChild.id
+        continue
+      }
+      if (isDefaultGuestChild(child) && firstFamilyChildId) {
+        childIdMap[child.id] = selectedFamilyChildId || firstFamilyChildId
         continue
       }
       const created = await api.createChildProfile({
