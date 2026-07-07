@@ -32,12 +32,12 @@ const api = require(apiPath)
 async function run() {
   const session = { token: 'token-1', familyKey: 'family-a' }
 
-  assert.strictEqual(api.FAMILY_KEY, 'audit-family')
+  assert.strictEqual(api.FAMILY_KEY, 'guest-family')
 
   await api.loadPlan(null)
   assert(
-    calls.pop().url.includes('familyKey=audit-family'),
-    'guest experience should load the isolated audit family'
+    calls.pop().url.includes('familyKey=guest-family'),
+    'anonymous fallback must not load the isolated audit family'
   )
 
   await api.loginWechat({ code: 'wx-code' })
