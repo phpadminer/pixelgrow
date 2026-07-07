@@ -100,6 +100,14 @@ assert(
 )
 
 assert(
+  /\.guest-expiry-card\s*\{[^}]*flex-direction: column/.test(wxss)
+    && /\.guest-expiry-actions\s*\{[^}]*display: grid[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/.test(wxss)
+    && /\.guest-save-button\s*\{[^}]*min-width: 0/.test(wxss)
+    && /\.guest-clear-button\s*\{[^}]*min-width: 0/.test(wxss),
+  'guest expiry card actions should be compact bottom buttons without overlapping the close button'
+)
+
+assert(
   wxml.includes('wx:if="{{canManagePlan}}"') && wxml.includes('data-kind="courses" bindtap="openItemForm">＋ 加课程'),
   'guest temporary family should expose the same plan creation entry points'
 )

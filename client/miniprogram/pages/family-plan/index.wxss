@@ -880,10 +880,10 @@ picker {
 .guest-expiry-card {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-  padding: 28rpx 30rpx 28rpx 30rpx;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 22rpx;
+  padding: 30rpx;
   margin-bottom: 24rpx;
   border-color: rgba(245, 163, 22, 0.28);
   background: rgba(255, 247, 222, 0.92);
@@ -921,27 +921,26 @@ picker {
 .guest-expiry-main {
   flex: 1 1 auto;
   min-width: 0;
-  padding-right: 22rpx;
+  padding-right: 58rpx;
 }
 
 .guest-save-button {
-  flex: 0 0 168rpx;
-  min-width: 168rpx;
+  width: 100%;
+  min-width: 0;
   padding: 0 18rpx;
   white-space: nowrap;
 }
 
 .guest-expiry-actions {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-  width: 168rpx;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14rpx;
+  width: 100%;
 }
 
 .guest-clear-button {
   width: 100%;
-  min-width: 168rpx;
+  min-width: 0;
   padding: 0 18rpx;
   white-space: nowrap;
 }
