@@ -1,5 +1,9 @@
 const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
 const { decorateAgendaActions, getRewardSetting } = require('../utils/familyPlanMakeup')
+
+const pageJs = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.js'), 'utf8')
 
 function testDefaultMakeupAllowed() {
   const [item] = decorateAgendaActions([
@@ -79,11 +83,55 @@ function testParentCanConfirmPendingCompletion() {
   assert.strictEqual(item.actionText, '确认')
 }
 
+function testParentCanUndoConfirmedCompletion() {
+  const [item] = decorateAgendaActions([
+    {
+      id: 'task-1',
+      category: 'task',
+      completed: true,
+      completionStatus: 'confirmed',
+      completionPointsDelta: 4,
+    },
+  ], '2026-07-04', '2026-07-04', { canUndoCompletion: true })
+
+  assert.strictEqual(item.canToggleCompletion, true)
+  assert.strictEqual(item.statusText, '撤销完成')
+  assert.strictEqual(item.actionText, '撤销')
+  assert.strictEqual(item.completionPointsDelta, 4)
+}
+
+function testChildCannotUndoConfirmedCompletion() {
+  const [item] = decorateAgendaActions([
+    {
+      id: 'task-1',
+      category: 'task',
+      completed: true,
+      completionStatus: 'confirmed',
+    },
+  ], '2026-07-04', '2026-07-04', { canUndoCompletion: false })
+
+  assert.strictEqual(item.canToggleCompletion, false)
+  assert.strictEqual(item.statusText, '已完成')
+  assert.strictEqual(item.actionText, '已完成')
+}
+
 testDefaultMakeupAllowed()
 testMakeupCanBeDisabled()
 testMakeupPointsAreSeparate()
 testCannotCompleteBeforeStartTime()
 testPendingCompletionWaitsForParent()
 testParentCanConfirmPendingCompletion()
+testParentCanUndoConfirmedCompletion()
+testChildCannotUndoConfirmedCompletion()
+
+assert(
+  /const actionOptions = \{ now, isParent: role === 'parent', canUndoCompletion: role === 'parent' \|\| role === 'guest' \}/.test(pageJs),
+  'parent and guest views should enable undo for confirmed completions'
+)
+
+assert(
+  /item\.completed \? '撤销完成'[\s\S]*?撤销「\$\{item\.title\}」完成记录/.test(pageJs),
+  'completion toggle dialog should use undo wording for completed items'
+)
 
 console.log('familyPlanMakeup tests passed')

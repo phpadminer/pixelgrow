@@ -317,6 +317,7 @@ function buildCourseItems(date, courses, completions) {
         completed: completion.completed,
         completionStatus: completion.status,
         completionIsMakeup: completion.isMakeup,
+        completionPointsDelta: completion.pointsDelta,
       }, getFocusSetting(course), getRewardSetting(course))
     })
 }
@@ -351,6 +352,7 @@ function buildHabitItems(date, habits, completions) {
         completed: completion.completed,
         completionStatus: completion.status,
         completionIsMakeup: completion.isMakeup,
+        completionPointsDelta: completion.pointsDelta,
       }, getFocusSetting(habit), getRewardSetting(habit))
     })
 }
@@ -374,6 +376,7 @@ function buildTaskItems(date, tasks, completions) {
         completed: completion.completed,
         completionStatus: completion.status,
         completionIsMakeup: completion.isMakeup,
+        completionPointsDelta: completion.pointsDelta,
       }, getFocusSetting(task), getRewardSetting(task))
     })
 }
@@ -1518,7 +1521,7 @@ Page({
       activeTab = 'today'
     }
     const now = new Date()
-    const actionOptions = { now, isParent: role === 'parent' }
+    const actionOptions = { now, isParent: role === 'parent', canUndoCompletion: role === 'parent' || role === 'guest' }
     const todayAgenda = decorateAgendaActions(
       buildAgenda(state.today, source, selectedChildId),
       state.today,
@@ -1691,20 +1694,22 @@ Page({
 
     try {
       const completed = !item.completed
-      const points = item.isMakeup ? item.makeupPoints : item.successPoints
+      const points = item.completed ? Number(item.completionPointsDelta || 0) : item.isMakeup ? item.makeupPoints : item.successPoints
       const confirmed = await new Promise((resolve) => {
-        const title = item.isMakeup ? '补打卡确认' : item.pendingCompletion ? '确认完成' : '提交完成'
-        const content = item.isMakeup
-          ? `补打卡「${item.title}」？确认后按补卡分计入 ${points} 积分。`
-          : item.pendingCompletion
-            ? `确认「${item.title}」已经完成？确认后计入 ${points} 积分。`
-            : this.data.isChild
-              ? `提交「${item.title}」完成申请？家长确认后计入积分。`
-              : `确认「${item.title}」已经完成并计入 ${points} 积分？`
+        const title = item.completed ? '撤销完成' : item.isMakeup ? '补打卡确认' : item.pendingCompletion ? '确认完成' : '提交完成'
+        const content = item.completed
+          ? `撤销「${item.title}」完成记录？已计入的 ${points} 积分会扣回。`
+          : item.isMakeup
+            ? `补打卡「${item.title}」？确认后按补卡分计入 ${points} 积分。`
+            : item.pendingCompletion
+              ? `确认「${item.title}」已经完成？确认后计入 ${points} 积分。`
+              : this.data.isChild
+                ? `提交「${item.title}」完成申请？家长确认后计入积分。`
+                : `确认「${item.title}」已经完成并计入 ${points} 积分？`
         wx.showModal({
           title,
           content,
-          confirmText: item.isMakeup ? '补卡' : item.pendingCompletion ? '确认' : '提交',
+          confirmText: item.completed ? '撤销' : item.isMakeup ? '补卡' : item.pendingCompletion ? '确认' : '提交',
           success: (res) => resolve(Boolean(res.confirm)),
           fail: () => resolve(false),
         })
@@ -1722,7 +1727,7 @@ Page({
           failurePoints: item.failurePoints,
         })
         wx.showToast({
-          title: completed ? `体验完成 +${points}` : '已取消体验完成',
+          title: completed ? `体验完成 +${points}` : '已撤销完成',
           icon: 'none',
         })
         this.refreshGuestPlan(nextPlan)
@@ -1730,7 +1735,7 @@ Page({
       }
       await api.updateCompletion(item.id, completed, this.data.session, { isMakeup: item.isMakeup })
       wx.showToast({
-        title: item.pendingCompletion ? `确认 +${points}` : this.data.isChild ? '已提交待确认' : `完成 +${points}`,
+        title: item.completed ? '已撤销完成' : item.pendingCompletion ? `确认 +${points}` : this.data.isChild ? '已提交待确认' : `完成 +${points}`,
         icon: 'none',
       })
       await this.fetchPlan()

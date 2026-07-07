@@ -71,6 +71,7 @@ function isBeforeStartTime(date, time, now) {
 
 function decorateAgendaActions(items, date, today, options = {}) {
   const isParent = Boolean(options.isParent)
+  const canUndoCompletion = Boolean(options.canUndoCompletion)
   const now = options.now || new Date()
   return items.map((item) => {
     if (item.category === 'milestone') {
@@ -92,11 +93,11 @@ function decorateAgendaActions(items, date, today, options = {}) {
     }
     if (item.completed) {
       return Object.assign({}, item, {
-        statusText: '已完成',
-        actionText: '已完成',
-        canToggleCompletion: false,
+        statusText: canUndoCompletion ? '撤销完成' : '已完成',
+        actionText: canUndoCompletion ? '撤销' : '已完成',
+        canToggleCompletion: canUndoCompletion,
         pendingCompletion: false,
-        isMakeup: false,
+        isMakeup: Boolean(item.completionIsMakeup),
       })
     }
     const isMakeup = date < today
