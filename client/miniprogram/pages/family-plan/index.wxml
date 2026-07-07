@@ -546,7 +546,7 @@
       <view class="sheet-head">
         <view>
           <view class="eyebrow">家庭</view>
-          <view class="sheet-title">切换家庭</view>
+          <view class="sheet-title">选择家庭</view>
         </view>
         <button class="ghost-button" bindtap="closeFamilySwitcher">关闭</button>
       </view>

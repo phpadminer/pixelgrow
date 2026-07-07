@@ -217,6 +217,16 @@ function getRoleLabel(role) {
   return '体验模式'
 }
 
+function shouldOpenFamilySwitcherOnEntry(session) {
+  return Boolean(
+    session
+      && session.role === 'parent'
+      && session.account
+      && Array.isArray(session.families)
+      && session.families.length > 0
+  )
+}
+
 function getActiveFamily(session) {
   if (!session) return null
   if (session.activeFamily) return session.activeFamily
@@ -845,6 +855,7 @@ Page({
       itemDraft: defaultItemDraft(today),
       guestNoticeDismissed: Boolean(wx.getStorageSync(GUEST_NOTICE_DISMISSED_KEY)),
       customNavPadding: getCustomNavPadding(),
+      familySwitcherOpen: shouldOpenFamilySwitcherOnEntry(session),
     })
     if (!session && !guestSession) {
       this.restoreWechatSessionOnStart()
@@ -983,6 +994,7 @@ Page({
       if (session && session.token) {
         this.applySession(session, {
           selectedChildId: session.childId || '',
+          familySwitcherOpen: shouldOpenFamilySwitcherOnEntry(session),
         })
         await this.fetchPlan()
         return
@@ -1013,6 +1025,7 @@ Page({
       })
       this.applySession(session, {
         selectedChildId: session.childId || '',
+        familySwitcherOpen: shouldOpenFamilySwitcherOnEntry(session),
       })
       wx.showToast({ title: session.activeFamily ? '登录成功' : '微信登录成功', icon: 'none' })
       await this.fetchPlan()

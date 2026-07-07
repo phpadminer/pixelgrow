@@ -14,4 +14,16 @@ assert(
   'plan loading should hydrate stale account sessions before loading family data'
 )
 
+assert(
+  /function shouldOpenFamilySwitcherOnEntry\(session\)[\s\S]*?session\.role === 'parent'[\s\S]*?session\.account[\s\S]*?session\.families\.length > 0/.test(pageJs),
+  'parent accounts with families should be recognized as needing the family chooser on entry'
+)
+
+assert(
+  /onLoad\(\)[\s\S]*?familySwitcherOpen: shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
+    && /restoreWechatSessionOnStart\(\)[\s\S]*?this\.applySession\(session, \{[\s\S]*?familySwitcherOpen: shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
+    && /loginWithWechat\(\)[\s\S]*?this\.applySession\(session, \{[\s\S]*?familySwitcherOpen: shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs),
+  'cached, restored, and explicit WeChat logins should open the family chooser when families exist'
+)
+
 console.log('familyPlanAccountSession tests passed')
