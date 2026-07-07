@@ -413,7 +413,7 @@
         </view>
         <view wx:for="{{visibleRules}}" wx:key="id" class="rule-card">
           <view class="rule-top">
-            <view class="rule-scope">{{item.scope === 'common' ? '共同规则' : '独立规则'}}</view>
+            <view class="rule-scope">{{item.scope === 'child' ? '独立规则' : '共同规则'}}</view>
             <button wx:if="{{canManagePlan}}" class="text-button" data-id="{{item.id}}" bindtap="openRuleForm">编辑</button>
           </view>
           <view class="agenda-title">{{item.title}}</view>

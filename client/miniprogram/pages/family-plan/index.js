@@ -1533,7 +1533,11 @@ Page({
     )
     const summaryAgenda = pickSummaryAgenda(activeTab, todayAgenda, selectedAgenda)
     const rate = completionRate(summaryAgenda)
-    const visibleRules = (state.rules || []).filter((rule) => !rule.childId || rule.childId === selectedChildId)
+    const visibleRules = (state.rules || [])
+      .filter((rule) => !rule.childId || rule.childId === selectedChildId)
+      .map((rule) => Object.assign({}, rule, {
+        scope: rule.scope || (rule.childId ? 'child' : 'common'),
+      }))
     const childRedemptions = (state.redemptions || []).filter((item) => item.childId === selectedChildId)
     const visiblePointLedger = (state.pointLedger || [])
       .filter((item) => item.childId === selectedChildId)

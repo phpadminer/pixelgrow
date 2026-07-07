@@ -3,6 +3,7 @@ const fs = require('fs')
 const path = require('path')
 
 const wxml = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.wxml'), 'utf8')
+const pageJs = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.js'), 'utf8')
 
 assert(
   !wxml.includes('wx:for="{{lessonTypeOptions}}"'),
@@ -109,6 +110,16 @@ assert(
 assert(
   wxml.includes('wx:if="{{canManagePlan}}" class="primary-button compact" bindtap="openRuleForm"'),
   'guest temporary family should expose rule management'
+)
+
+assert(
+  wxml.includes("{{item.scope === 'child' ? '独立规则' : '共同规则'}}"),
+  'rules without an explicit scope should default to common, not independent'
+)
+
+assert(
+  /const visibleRules = \(state\.rules \|\| \[\]\)[\s\S]*?scope: rule\.scope \|\| \(rule\.childId \? 'child' : 'common'\)/.test(pageJs),
+  'visible rules should normalize missing scope from childId'
 )
 
 console.log('familyPlanWxml tests passed')
