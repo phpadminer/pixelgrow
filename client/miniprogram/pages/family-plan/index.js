@@ -891,7 +891,9 @@ Page({
     this.setData({ accountAvatarUrl: event.detail.avatarUrl })
   },
 
-  openLoginForm() {
+  async openLoginForm() {
+    const restored = await this.restoreWechatSessionFromAction()
+    if (restored) return
     this.setData({ loginFormOpen: true })
   },
 
@@ -923,11 +925,9 @@ Page({
     this.fetchPlan()
   },
 
-  chooseLoginMode() {
-    this.setData({
-      startChoiceOpen: false,
-      loginFormOpen: true,
-    })
+  async chooseLoginMode() {
+    this.setData({ startChoiceOpen: false })
+    await this.openLoginForm()
   },
 
   applySession(session, extraPatch = {}) {
@@ -1011,6 +1011,35 @@ Page({
         this.setData({ loading: false })
       }
     }
+  },
+
+  async restoreWechatSessionFromAction() {
+    const pendingGuestPlan = this.getStoredGuestPlan()
+    this.setData({ loading: true })
+    try {
+      const code = await this.getWechatLoginCode()
+      const session = await api.restoreWechatSession({ code })
+      if (session && session.token) {
+        this.applySession(session, {
+          selectedChildId: session.childId || '',
+          familySwitcherOpen: shouldOpenFamilySwitcherOnEntry(session),
+          pendingGuestSavePlan: hasGuestPlanData(pendingGuestPlan) ? pendingGuestPlan : this.data.pendingGuestSavePlan,
+        })
+        await this.fetchPlan()
+        if (!this.data.activeFamily && hasGuestPlanData(pendingGuestPlan)) {
+          this.setData({ pendingGuestSavePlan: pendingGuestPlan })
+          wx.showToast({ title: '先创建家庭，创建后自动保存', icon: 'none' })
+        }
+        return true
+      }
+    } catch (err) {
+      // Fall through to the explicit first-time login form.
+    } finally {
+      if (!this.data.session) {
+        this.setData({ loading: false })
+      }
+    }
+    return false
   },
 
   async loginWithWechat() {

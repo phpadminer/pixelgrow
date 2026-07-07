@@ -21,8 +21,8 @@ assert(
 
 assert(
   /chooseGuestMode\(\)[\s\S]*?startChoiceOpen: false[\s\S]*?this\.fetchPlan\(\)/.test(pageJs)
-    && /chooseLoginMode\(\)[\s\S]*?startChoiceOpen: false[\s\S]*?loginFormOpen: true/.test(pageJs),
-  'choice actions should enter guest mode or open login explicitly'
+    && /async chooseLoginMode\(\)[\s\S]*?startChoiceOpen: false[\s\S]*?await this\.openLoginForm\(\)/.test(pageJs),
+  'choice actions should enter guest mode or start the explicit login flow'
 )
 
 assert(

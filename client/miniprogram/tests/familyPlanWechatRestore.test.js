@@ -30,6 +30,12 @@ assert(
 )
 
 assert(
+  /async openLoginForm\(\)[\s\S]*?const restored = await this\.restoreWechatSessionFromAction\(\)[\s\S]*?if \(restored\) return[\s\S]*?loginFormOpen: true/.test(pageJs)
+    && /async restoreWechatSessionFromAction\(\)[\s\S]*?api\.restoreWechatSession\(\{ code \}\)[\s\S]*?this\.applySession\(session, \{[\s\S]*?familySwitcherOpen: shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs),
+  'manual login should first restore an existing WeChat account before showing the profile form'
+)
+
+assert(
   /@Post\('auth\/wechat\/restore'\)[\s\S]*?restoreWechatSession\(@Body\(\) dto: WechatFamilyPlanLoginDto\)/.test(controllerTs),
   'server should expose a dedicated WeChat restore endpoint'
 )
