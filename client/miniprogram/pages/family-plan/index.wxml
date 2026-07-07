@@ -588,8 +588,15 @@
             <view class="family-member-name">{{item.name}}</view>
             <view class="muted">{{item.grade}} · {{item.points}} 积分 · {{item.bindStatusText}}</view>
           </view>
+          <button
+            wx:if="{{item.bindStatus !== 'bound'}}"
+            class="secondary-button mini family-child-bind-button"
+            data-child-key="{{item.childKey}}"
+            loading="{{loading}}"
+            bindtap="createChildBindInvite"
+          >绑定微信</button>
         </view>
-        <view class="helper-text">孩子后续可以绑定微信；现在先保留系统孩子账号。</view>
+        <view class="helper-text">孩子账号先由系统保存；绑定微信后，孩子可用自己的微信进入。</view>
       </view>
 
       <view class="family-manage-section">
@@ -617,11 +624,11 @@
         <button class="primary-button" bindtap="openCreateFamilyForm">创建家庭</button>
       </view>
 
-      <button wx:if="{{activeFamily}}" class="secondary-button full" loading="{{loading}}" bindtap="createFamilyInvite">生成家人邀请码</button>
+      <button wx:if="{{activeFamily}}" class="secondary-button full" loading="{{loading}}" bindtap="createFamilyInvite">邀请家长</button>
       <view wx:if="{{inviteInfo}}" class="invite-box">
-        <view class="field-label">邀请码</view>
+        <view class="field-label">{{inviteInfo.label}}</view>
         <view class="invite-code">{{inviteInfo.inviteCode}}</view>
-        <view class="helper-text">已复制到剪贴板，也可以直接微信分享给家人。</view>
+        <view class="helper-text">{{inviteInfo.hint}}</view>
         <view class="family-actions inline">
           <button class="secondary-button" bindtap="copyInviteCode">复制邀请码</button>
           <button class="primary-button" open-type="share">微信邀请</button>

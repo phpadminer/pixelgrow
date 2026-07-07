@@ -255,6 +255,17 @@ function decorateFamilyManagedChild(child) {
   })
 }
 
+function decorateInviteInfo(inviteInfo) {
+  if (!inviteInfo) return null
+  const isChildInvite = inviteInfo.role === 'child'
+  return Object.assign({}, inviteInfo, {
+    label: isChildInvite ? '孩子绑定码' : '家长邀请码',
+    hint: isChildInvite
+      ? `发给孩子微信，登录后绑定到 ${inviteInfo.childName || '这个孩子'}`
+      : '已复制到剪贴板，也可以直接微信分享给家长。',
+  })
+}
+
 function shouldOpenFamilySwitcherOnEntry(session) {
   return Boolean(
     session
@@ -915,8 +926,11 @@ Page({
   onShareAppMessage() {
     const inviteInfo = this.data.inviteInfo
     if (inviteInfo && inviteInfo.inviteCode) {
+      const title = inviteInfo.role === 'child' && inviteInfo.childName
+        ? `${inviteInfo.familyName || '我的家庭'} 邀请 ${inviteInfo.childName} 绑定微信`
+        : `${inviteInfo.familyName || '我的家庭'} 邀请你加入伴学点滴`
       return {
-        title: `${inviteInfo.familyName || '我的家庭'} 邀请你加入伴学点滴`,
+        title,
         path: `/pages/family-plan/index?inviteCode=${encodeURIComponent(inviteInfo.inviteCode)}`,
       }
     }
@@ -1629,7 +1643,7 @@ Page({
       this.applySession(session)
       await this.fetchPlan()
       const saved = await this.savePendingGuestPlanAfterFamilySetup(pendingGuestPlan)
-      if (saved === false) wx.showToast({ title: '已加入家庭', icon: 'success' })
+      if (saved === false) wx.showToast({ title: session.role === 'child' ? '已绑定孩子微信' : '已加入家庭', icon: 'success' })
     } catch (err) {
       this.showError(err, '加入家庭失败')
     } finally {
@@ -1663,13 +1677,37 @@ Page({
     }
     this.setData({ loading: true })
     try {
-      const inviteInfo = await api.createInvite({ role: 'parent' }, this.data.session)
+      const inviteInfo = decorateInviteInfo(await api.createInvite({ role: 'parent' }, this.data.session))
       this.setData({ inviteInfo })
       if (wx.setClipboardData) {
         wx.setClipboardData({ data: inviteInfo.inviteCode })
       }
     } catch (err) {
       this.showError(err, '生成邀请码失败')
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  async createChildBindInvite(event) {
+    if (!this.data.activeFamily) {
+      wx.showToast({ title: '请先选择家庭', icon: 'none' })
+      return
+    }
+    const childKey = event.currentTarget.dataset.childKey
+    if (!childKey) {
+      wx.showToast({ title: '请选择孩子', icon: 'none' })
+      return
+    }
+    this.setData({ loading: true })
+    try {
+      const inviteInfo = decorateInviteInfo(await api.createInvite({ role: 'child', childKey, maxUses: 1 }, this.data.session))
+      this.setData({ inviteInfo })
+      if (wx.setClipboardData) {
+        wx.setClipboardData({ data: inviteInfo.inviteCode })
+      }
+    } catch (err) {
+      this.showError(err, '生成绑定邀请失败')
     } finally {
       this.setData({ loading: false })
     }

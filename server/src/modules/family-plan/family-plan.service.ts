@@ -474,6 +474,10 @@ export class FamilyPlanService {
 
   private async buildWechatParentSession(account) {
     const families = await this.getFamilyMemberships(account.id)
+    if (families.length === 0) {
+      const childSession = await this.buildBoundChildSession(account)
+      if (childSession) return childSession
+    }
     const activeFamily = families[0] || null
     const token = signSession(activeFamily
       ? {
@@ -500,6 +504,21 @@ export class FamilyPlanService {
       familyKey: activeFamily?.familyKey || '',
       name: account.nickname || '家长',
     }
+  }
+
+  private async buildBoundChildSession(account) {
+    const child = await this.prisma.familyPlanChild.findFirst({
+      where: {
+        boundAccountId: account.id,
+      },
+    })
+    if (!child) return null
+    const family = await this.prisma.familyPlanFamily.findUnique({
+      where: {
+        familyKey: child.familyKey,
+      },
+    })
+    return this.toChildAuthResult(account, family, child)
   }
 
   async restoreWechatSession(dto: WechatFamilyPlanLoginDto) {
@@ -646,7 +665,7 @@ export class FamilyPlanService {
         avatar: child.avatar,
         grade: child.grade,
         points: child.points,
-        bindStatus: 'unbound',
+        bindStatus: child.boundAccountId ? 'bound' : 'unbound',
       })),
     }
   }
@@ -687,12 +706,32 @@ export class FamilyPlanService {
     if (session.memberRole === 'viewer') {
       throw new ForbiddenException('只有家庭成员可以邀请')
     }
+    const inviteRole = dto.role === 'child' ? 'child' : normalizeMemberRole(dto.role)
+    let inviteChild: { childKey: string; name: string } | null = null
+    if (inviteRole === 'child') {
+      const childKey = dto.childKey?.trim()
+      if (!childKey) {
+        throw new BadRequestException('请选择要绑定的孩子')
+      }
+      inviteChild = await this.prisma.familyPlanChild.findUnique({
+        where: {
+          familyKey_childKey: {
+            familyKey: session.familyKey,
+            childKey,
+          },
+        },
+      })
+      if (!inviteChild) {
+        throw new NotFoundException('孩子不存在')
+      }
+    }
     const invite = await this.prisma.familyPlanInvite.create({
       data: {
         familyId: session.familyId,
         inviteCode: await this.createUniqueInviteCode(),
-        role: normalizeMemberRole(dto.role),
-        maxUses: dto.maxUses,
+        role: inviteRole,
+        childKey: inviteChild?.childKey,
+        maxUses: inviteRole === 'child' ? 1 : dto.maxUses,
         createdByAccountId: session.accountId,
       },
       include: {
@@ -704,6 +743,8 @@ export class FamilyPlanService {
       id: invite.id,
       inviteCode: invite.inviteCode,
       role: invite.role,
+      childKey: invite.childKey,
+      childName: inviteChild?.name,
       familyId: invite.familyId,
       familyKey: invite.family.familyKey,
       familyName: invite.family.name,
@@ -732,6 +773,10 @@ export class FamilyPlanService {
     }
     if (invite.maxUses !== null && invite.maxUses !== undefined && invite.usedCount >= invite.maxUses) {
       throw new BadRequestException('邀请码已用完')
+    }
+
+    if (invite.role === 'child') {
+      return this.joinChildInvite(invite, session)
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -779,6 +824,64 @@ export class FamilyPlanService {
     }
     const membership = await this.getMembership(session.accountId, invite.familyId)
     return this.toParentAuthResult(session.accountId, membership)
+  }
+
+  private async joinChildInvite(invite, session: FamilyPlanSession & { accountId: string }) {
+    if (!invite.childKey) {
+      throw new BadRequestException('孩子绑定邀请码缺少孩子信息')
+    }
+    const child = await this.prisma.familyPlanChild.findUnique({
+      where: {
+        familyKey_childKey: {
+          familyKey: invite.family.familyKey,
+          childKey: invite.childKey,
+        },
+      },
+    })
+    if (!child) {
+      throw new NotFoundException('孩子不存在')
+    }
+    if (child.boundAccountId && child.boundAccountId !== session.accountId) {
+      throw new BadRequestException('这个孩子已绑定其他微信')
+    }
+    const existingMember = await this.prisma.familyPlanFamilyMember.findUnique({
+      where: {
+        familyId_accountId: {
+          familyId: invite.familyId,
+          accountId: session.accountId,
+        },
+      },
+    })
+    if (existingMember?.status === 'active') {
+      throw new BadRequestException('当前微信已是家长账号，不能绑定为孩子')
+    }
+    const updatedChild = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.familyPlanChild.update({
+        where: {
+          familyKey_childKey: {
+            familyKey: invite.family.familyKey,
+            childKey: invite.childKey,
+          },
+        },
+        data: {
+          boundAccountId: session.accountId,
+        },
+      })
+      await tx.familyPlanInvite.update({
+        where: { id: invite.id },
+        data: {
+          usedCount: {
+            increment: 1,
+          },
+        },
+      })
+      return result
+    })
+    const account = await this.prisma.familyPlanAccount.findUnique({ where: { id: session.accountId } })
+    if (!account) {
+      throw new UnauthorizedException('账号不存在')
+    }
+    return this.toChildAuthResult(account, invite.family, updatedChild)
   }
 
   async getPlan(familyKey = DEFAULT_FAMILY_KEY, authorization?: string) {
@@ -1654,6 +1757,28 @@ export class FamilyPlanService {
       account: serializeAccount(account),
       activeFamily,
       families,
+    }
+  }
+
+  private toChildAuthResult(account, family, child) {
+    return {
+      token: signSession({
+        role: 'child',
+        accountId: account.id,
+        familyId: family?.id,
+        familyKey: child.familyKey,
+        familyName: family?.name,
+        childId: child.childKey,
+        name: child.name,
+      }),
+      role: 'child',
+      account: serializeAccount(account),
+      familyKey: child.familyKey,
+      familyId: family?.id || '',
+      familyName: family?.name || '',
+      childId: child.childKey,
+      name: child.name,
+      avatar: child.avatar,
     }
   }
 

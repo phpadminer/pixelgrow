@@ -246,8 +246,13 @@ export class CreateFamilyPlanFamilyDto {
 export class CreateFamilyPlanInviteDto {
   @IsString()
   @IsOptional()
-  @IsIn(['admin', 'parent', 'viewer'])
-  role?: 'admin' | 'parent' | 'viewer'
+  @IsIn(['admin', 'parent', 'viewer', 'child'])
+  role?: 'admin' | 'parent' | 'viewer' | 'child'
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(80)
+  childKey?: string
 
   @IsInt()
   @IsOptional()

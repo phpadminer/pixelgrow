@@ -193,6 +193,7 @@ model FamilyPlanInvite {
   familyId           String
   inviteCode         String    @unique
   role               String    @default("parent")
+  childKey           String?
   status             String    @default("active")
   maxUses            Int?
   usedCount          Int       @default(0)
@@ -214,6 +215,7 @@ model FamilyPlanChild {
   childKey  String
   childCode String?
   pinCode   String?
+  boundAccountId String?
   name      String
   avatar    String
   grade     String
@@ -223,6 +225,7 @@ model FamilyPlanChild {
   updatedAt DateTime @updatedAt
 
   @@unique([familyKey, childKey])
+  @@unique([boundAccountId])
   @@index([familyKey])
   @@index([familyKey, childCode])
 }

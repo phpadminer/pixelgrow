@@ -2460,6 +2460,11 @@ picker {
   font-weight: 900;
 }
 
+.family-child-bind-button {
+  flex: 0 0 auto;
+  min-width: 132rpx;
+}
+
 .family-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
