@@ -697,6 +697,7 @@ Page({
     guestExpiryText: '',
     guestExpiredNotice: false,
     guestNoticeDismissed: false,
+    guestModeStarted: false,
     guestPreviewRole: 'parent',
     guestPreviewSwitchVisible: false,
     isGuestParentPreview: true,
@@ -890,6 +891,7 @@ Page({
       isGuest: true,
       isParent: false,
       isChild: false,
+      guestModeStarted: true,
       guestPreviewRole: 'parent',
       isGuestParentPreview: true,
       isGuestChildPreview: false,
@@ -923,6 +925,7 @@ Page({
       isGuest: !session,
       isParent: role === 'parent',
       isChild: role === 'child',
+      guestModeStarted: false,
       guestPreviewRole: 'parent',
       guestPreviewSwitchVisible: false,
       isGuestParentPreview: false,
@@ -955,11 +958,19 @@ Page({
     })
   },
 
+  isWechatRestoreStillCurrent() {
+    return !this.data.session
+      && !this.data.guestModeStarted
+      && !wx.getStorageSync(SESSION_KEY)
+      && !wx.getStorageSync(GUEST_SESSION_KEY)
+  },
+
   async restoreWechatSessionOnStart() {
     this.setData({ loading: true })
     try {
       const code = await this.getWechatLoginCode()
       const session = await api.restoreWechatSession({ code })
+      if (!this.isWechatRestoreStillCurrent()) return
       if (session && session.token) {
         this.applySession(session, {
           selectedChildId: session.childId || '',
@@ -967,9 +978,13 @@ Page({
         await this.fetchPlan()
         return
       }
-      this.setData({ startChoiceOpen: true })
+      if (this.isWechatRestoreStillCurrent()) {
+        this.setData({ startChoiceOpen: true })
+      }
     } catch (err) {
-      this.setData({ startChoiceOpen: true })
+      if (this.isWechatRestoreStillCurrent()) {
+        this.setData({ startChoiceOpen: true })
+      }
     } finally {
       if (!this.data.session) {
         this.setData({ loading: false })
@@ -1034,6 +1049,7 @@ Page({
       isGuest: true,
       isParent: false,
       isChild: false,
+      guestModeStarted: false,
       guestPreviewRole: 'parent',
       guestPreviewSwitchVisible: false,
       isGuestParentPreview: true,

@@ -23,6 +23,13 @@ assert(
 )
 
 assert(
+  /isWechatRestoreStillCurrent\(\)[\s\S]*?!this\.data\.guestModeStarted[\s\S]*?wx\.getStorageSync\(GUEST_SESSION_KEY\)/.test(pageJs)
+    && /async restoreWechatSessionOnStart\(\)[\s\S]*?if \(!this\.isWechatRestoreStillCurrent\(\)\) return[\s\S]*?this\.setData\(\{ startChoiceOpen: true \}\)/.test(pageJs)
+    && /chooseGuestMode\(\)[\s\S]*?guestModeStarted: true/.test(pageJs),
+  'late silent restore results should not reopen the choice sheet or override an active guest session'
+)
+
+assert(
   /@Post\('auth\/wechat\/restore'\)[\s\S]*?restoreWechatSession\(@Body\(\) dto: WechatFamilyPlanLoginDto\)/.test(controllerTs),
   'server should expose a dedicated WeChat restore endpoint'
 )
