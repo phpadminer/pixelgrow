@@ -68,6 +68,14 @@ function createPlanItem(type, payload, session) {
   )
 }
 
+function createChildProfile(payload, session) {
+  return request.post(
+    '/family-plan/children',
+    Object.assign({ familyKey: getSessionFamilyKey(session) }, payload),
+    getAuthOptions(session)
+  )
+}
+
 function updatePlanItem(type, id, payload, session) {
   return request.put(
     `/family-plan/${type}/${encodeURIComponent(id)}`,
@@ -164,6 +172,7 @@ module.exports = {
   switchFamily,
   updateCompletion,
   createPlanItem,
+  createChildProfile,
   updatePlanItem,
   deletePlanItem,
   createGift,

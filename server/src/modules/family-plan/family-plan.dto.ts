@@ -280,6 +280,8 @@ export class UpdateFamilyPlanChildDto extends FamilyKeyDto {
   grade: string
 }
 
+export class CreateFamilyPlanChildDto extends UpdateFamilyPlanChildDto {}
+
 export class UpdateFamilyPlanCourseDto extends CreateFamilyPlanCourseDto {}
 
 export class UpdateFamilyPlanHabitDto extends CreateFamilyPlanHabitDto {}

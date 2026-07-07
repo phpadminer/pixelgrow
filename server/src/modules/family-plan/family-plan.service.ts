@@ -3,6 +3,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException,
 import { PrismaService } from '../../prisma/prisma.service'
 import {
   ChildLoginDto,
+  CreateFamilyPlanChildDto,
   CreateFamilyPlanFamilyDto,
   CreateFamilyPlanCourseDto,
   CreateFamilyPlanGiftDto,
@@ -859,6 +860,24 @@ export class FamilyPlanService {
     }
   }
 
+  async createChild(dto: CreateFamilyPlanChildDto, authorization?: string) {
+    this.assertParentIfAuthenticated(authorization)
+    const familyKey = this.resolveFamilyKey(dto.familyKey, authorization)
+    const child = await this.prisma.familyPlanChild.create({
+      data: {
+        familyKey,
+        childKey: await this.createUniqueChildKey(familyKey),
+        childCode: await this.createUniqueChildCode(familyKey),
+        pinCode: '2580',
+        name: dto.name.trim(),
+        avatar: dto.avatar,
+        grade: dto.grade,
+        ageBand: getAgeBandFromGrade(dto.grade),
+      },
+    })
+    return this.serializeChild(child)
+  }
+
   async updateChild(childKey: string, dto: UpdateFamilyPlanChildDto, authorization?: string) {
     const session = verifySession(authorization)
     const familyKey = this.resolveFamilyKey(dto.familyKey, authorization)
@@ -880,15 +899,7 @@ export class FamilyPlanService {
     )
 
     const child = await this.prisma.familyPlanChild.findFirstOrThrow({ where: { familyKey, childKey } })
-    return {
-      id: child.childKey,
-      childCode: child.childCode,
-      name: child.name,
-      avatar: child.avatar,
-      grade: child.grade,
-      ageBand: child.ageBand,
-      points: child.points,
-    }
+    return this.serializeChild(child)
   }
 
   async createCourse(dto: CreateFamilyPlanCourseDto, authorization?: string) {
@@ -1610,6 +1621,35 @@ export class FamilyPlanService {
     throw new BadRequestException('邀请码生成失败，请重试')
   }
 
+  private async createUniqueChildKey(familyKey: string) {
+    for (let i = 0; i < 8; i += 1) {
+      const childKey = makePublicKey('child')
+      const existing = await this.prisma.familyPlanChild.findUnique({
+        where: {
+          familyKey_childKey: {
+            familyKey,
+            childKey,
+          },
+        },
+      })
+      if (!existing) {
+        return childKey
+      }
+    }
+    throw new BadRequestException('孩子编号生成失败，请重试')
+  }
+
+  private async createUniqueChildCode(familyKey: string) {
+    for (let i = 0; i < 8; i += 1) {
+      const childCode = Math.random().toString(36).slice(2, 8).toUpperCase()
+      const existing = await this.prisma.familyPlanChild.findFirst({ where: { familyKey, childCode } })
+      if (!existing) {
+        return childCode
+      }
+    }
+    throw new BadRequestException('孩子码生成失败，请重试')
+  }
+
   private async ensureFamilyRecord(familyKey: string, name: string) {
     return this.prisma.familyPlanFamily.upsert({
       where: { familyKey },
@@ -1882,6 +1922,18 @@ export class FamilyPlanService {
 
   private shouldSeedFamilyData(familyKey: string) {
     return familyKey === AUDIT_FAMILY_KEY || familyKey === DEFAULT_FAMILY_KEY
+  }
+
+  private serializeChild(child) {
+    return {
+      id: child.childKey,
+      childCode: child.childCode,
+      name: child.name,
+      avatar: child.avatar,
+      grade: child.grade,
+      ageBand: child.ageBand,
+      points: child.points,
+    }
   }
 
   private defaultChildGrade(childKey: string) {

@@ -74,6 +74,17 @@ function emptyGuestPlan() {
   }
 }
 
+function defaultGuestChild() {
+  const suffix = Date.now().toString(36)
+  return {
+    id: `guest-child-${suffix}`,
+    name: '我的孩子',
+    avatar: 'lamb',
+    grade: '一年级',
+    points: 0,
+  }
+}
+
 function makeWeekdayOptions(selectedValues = []) {
   return WEEKDAY_VALUES.map((value, index) => ({
     value,
@@ -1029,6 +1040,15 @@ Page({
     this.refreshView(plan)
   },
 
+  createDefaultGuestChild() {
+    if (!this.data.isGuest) return
+    if ((this.data.children || []).length > 0) return
+    const child = defaultGuestChild()
+    const children = [child]
+    this.refreshGuestPlan({ children, selectedChildId: child.id })
+    wx.showToast({ title: '已创建临时孩子', icon: 'success' })
+  },
+
   async maybeOfferGuestPlanSave(pendingGuestPlan) {
     const guestPlan = pendingGuestPlan || this.getStoredGuestPlan()
     if (!hasGuestPlanData(guestPlan)) return
@@ -1082,9 +1102,30 @@ Page({
   async saveGuestPlanToFamily(plan) {
     const session = this.data.session
     const familyChildren = this.data.children || []
-    const fallbackChildId = this.data.selectedChildId || (familyChildren[0] && familyChildren[0].id) || ''
+    const makeImportKey = (...parts) => parts
+      .map((part) => String(part === undefined || part === null ? '' : part).trim().replace(/\s+/g, ' '))
+      .join('|')
+    const findExistingImportItem = (items, targetKey, makeKey) => (items || []).find((item) => makeKey(item) === targetKey) || null
+    const childIdMap = {}
+    const makeChildKey = (child) => makeImportKey(child.name, child.grade, child.avatar)
+    for (let index = 0; index < (plan.children || []).length; index += 1) {
+      const child = plan.children[index]
+      const existingChild = findExistingImportItem(familyChildren, makeChildKey(child), makeChildKey)
+      if (existingChild) {
+        childIdMap[child.id] = existingChild.id
+        continue
+      }
+      const created = await api.createChildProfile({
+        name: child.name,
+        avatar: child.avatar,
+        grade: child.grade,
+      }, session)
+      childIdMap[child.id] = created.id
+      familyChildren.push(created)
+    }
+    const fallbackChildId = childIdMap[this.data.selectedChildId] || this.data.selectedChildId || (familyChildren[0] && familyChildren[0].id) || ''
     const hasFamilyChild = (childId) => familyChildren.some((child) => child.id === childId)
-    const resolveChildId = (childId) => hasFamilyChild(childId) ? childId : fallbackChildId
+    const resolveChildId = (childId) => childIdMap[childId] || (hasFamilyChild(childId) ? childId : fallbackChildId)
     const hasChildBoundItems = ['courses', 'habits', 'tasks'].some((key) => (plan[key] || []).length > 0)
       || (plan.rules || []).some((item) => item.childId)
       || (plan.redemptions || []).some((item) => item.childId)
@@ -1094,10 +1135,6 @@ Page({
 
     const itemIdMap = {}
     const giftIdMap = {}
-    const makeImportKey = (...parts) => parts
-      .map((part) => String(part === undefined || part === null ? '' : part).trim().replace(/\s+/g, ' '))
-      .join('|')
-    const findExistingImportItem = (items, targetKey, makeKey) => (items || []).find((item) => makeKey(item) === targetKey) || null
     const makeCourseKey = (item) => makeImportKey(item.childId, item.subject, item.teacher, item.startDate, item.settlementDate, item.weekday, item.time, item.durationMinutes)
     const makeHabitKey = (item) => makeImportKey(item.childId, item.title, item.frequency)
     const makeTaskKey = (item) => makeImportKey(item.childId, item.title, item.dueDate, item.time)
@@ -1474,6 +1511,7 @@ Page({
     const historySummary = summarizeHistoryTrend(historyTrend)
     const needsFamilySetup = role === 'parent' && Boolean(state.account) && !state.activeFamily
     const canManagePlan = role === 'parent' ? Boolean(state.activeFamily) : role === 'guest'
+    const guestOnboardingVisible = role === 'guest' && (state.children || []).length === 0
     this.setData(Object.assign({}, patch, {
       tabs,
       activeTab,
@@ -1484,6 +1522,7 @@ Page({
       isChild: role === 'child',
       canManagePlan,
       needsFamilySetup,
+      guestOnboardingVisible,
       selectedChildId,
       selectedChild,
       selectedChildPoints: selectedChild ? Number(selectedChild.points || 0) : 0,

@@ -64,6 +64,14 @@ async function run() {
   await api.createPlanItem('tasks', { title: '任务' }, session)
   assert.strictEqual(calls.pop().data.familyKey, 'family-a')
 
+  await api.createChildProfile({ name: '我的孩子', avatar: 'lamb', grade: '一年级' }, session)
+  assert.deepStrictEqual(calls.pop(), {
+    method: 'POST',
+    url: '/family-plan/children',
+    data: { familyKey: 'family-a', name: '我的孩子', avatar: 'lamb', grade: '一年级' },
+    options: { header: { Authorization: 'Bearer token-1' }, skipAuth: true },
+  })
+
   await api.deleteGift('gift-1', session)
   assert.deepStrictEqual(calls.pop(), {
     method: 'DELETE',

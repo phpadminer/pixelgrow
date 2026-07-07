@@ -1,5 +1,5 @@
 const GUEST_MODE_TTL_MS = 3 * 24 * 60 * 60 * 1000
-const GUEST_PLAN_DATA_KEYS = ['courses', 'habits', 'tasks', 'milestones', 'gifts', 'redemptions', 'pointLedger', 'rules']
+const GUEST_PLAN_DATA_KEYS = ['children', 'courses', 'habits', 'tasks', 'milestones', 'gifts', 'redemptions', 'pointLedger', 'rules']
 
 function isGuestSession(session) {
   return !session || !session.token

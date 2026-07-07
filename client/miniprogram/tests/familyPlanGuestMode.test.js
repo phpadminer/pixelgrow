@@ -122,8 +122,8 @@ const guestPlan = {
     },
   },
 }
-assert.strictEqual(countGuestPlanData(guestPlan), 7)
+assert.strictEqual(countGuestPlanData(guestPlan), 8)
 assert.strictEqual(hasGuestPlanData(guestPlan), true)
-assert.strictEqual(hasGuestPlanData({ children: [{ id: 'gege' }] }), false)
+assert.strictEqual(hasGuestPlanData({ children: [{ id: 'guest-child-1' }] }), true)
 
 console.log('familyPlanGuestMode tests passed')

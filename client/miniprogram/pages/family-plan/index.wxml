@@ -50,6 +50,29 @@
         <button class="primary-button compact guest-save-button" bindtap="openLoginForm">登录保存</button>
       </view>
 
+      <view wx:if="{{guestOnboardingVisible}}" class="guest-onboarding-card">
+        <view>
+          <view class="muted strong">体验向导</view>
+          <view class="agenda-title">先创建一个临时孩子</view>
+          <view class="muted">按 3 步体验：建孩子、加任务或课程、完成后登录保存。</view>
+        </view>
+        <view class="onboarding-steps">
+          <view class="onboarding-step active">
+            <view class="step-index">1</view>
+            <view>创建孩子</view>
+          </view>
+          <view class="onboarding-step">
+            <view class="step-index">2</view>
+            <view>添加安排</view>
+          </view>
+          <view class="onboarding-step">
+            <view class="step-index">3</view>
+            <view>登录保存</view>
+          </view>
+        </view>
+        <button class="primary-button compact" bindtap="createDefaultGuestChild">创建临时孩子</button>
+      </view>
+
       <view class="children-row" wx:if="{{activeTab !== 'notifications' && children.length > 1}}">
         <view
           wx:for="{{children}}"

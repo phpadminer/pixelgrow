@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Headers, Param, Post, Put, Query } from 
 import { FamilyPlanService } from './family-plan.service'
 import {
   ChildLoginDto,
+  CreateFamilyPlanChildDto,
   CreateFamilyPlanFamilyDto,
   CreateFamilyPlanGiftDto,
   CreateFamilyPlanCourseDto,
@@ -72,6 +73,11 @@ export class FamilyPlanController {
   @Get()
   getPlan(@Query('familyKey') familyKey?: string, @Headers('authorization') authorization?: string) {
     return this.familyPlanService.getPlan(familyKey, authorization)
+  }
+
+  @Post('children')
+  createChild(@Body() dto: CreateFamilyPlanChildDto, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.createChild(dto, authorization)
   }
 
   @Put('children/:childKey')
