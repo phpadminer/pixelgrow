@@ -79,6 +79,12 @@ assert(
 )
 
 assert(
+  /async loadFamilies\(\)[\s\S]*?const families = result\.families \|\| \[\][\s\S]*?families\.find[\s\S]*?familyKey: activeFamily \? activeFamily\.familyKey : ''/.test(pageJs)
+    && /async deleteFamily\(event\)[\s\S]*?const remainingFamilies = \(session\.families \|\| \[\]\)\.filter[\s\S]*?activeFamily = session\.activeFamily && session\.activeFamily\.familyId !== familyId/.test(pageJs),
+  'family removal should not keep a removed family through stale activeFamily fallback'
+)
+
+assert(
   wxml.includes('class="sheet family-form-sheet"')
     && wxml.includes('邀请码已包含身份，加入后直接进入对应家庭。'),
   'join and create family forms should use compact sheets and explain invite role handling'
@@ -149,6 +155,8 @@ assert(
     && wxss.includes('.family-row-delete')
     && wxss.includes('.family-form-sheet .login-submit-button')
     && wxss.includes('.family-row-status')
+    && wxss.includes('grid-template-columns: 104rpx 62rpx minmax(0, 1fr) auto')
+    && wxss.includes('overflow-wrap: anywhere')
     && wxss.includes('.family-child-bind-button'),
   'family management UI should have warm styled member rows'
 )

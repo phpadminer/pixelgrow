@@ -547,7 +547,7 @@
             </view>
           </view>
         </view>
-        <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="loginWithWechat">选择头像昵称后登录</button>
+        <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="loginWithWechat">保存并替换微信资料</button>
       </view>
 
       <view class="helper-text">游客模式：关闭弹窗继续体验，数据临时，不保存到家庭。需要长期保存时，再微信登录并创建家庭。</view>
@@ -594,6 +594,11 @@
             <view class="family-member-name">{{item.nickname}}</view>
             <view class="muted">{{item.roleLabel}} {{item.currentText}}</view>
           </view>
+          <button
+            wx:if="{{item.isCurrentAccount}}"
+            class="secondary-button mini family-profile-button"
+            bindtap="openAccountProfileForm"
+          >更新资料</button>
         </view>
       </view>
 

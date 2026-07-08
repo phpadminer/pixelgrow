@@ -217,10 +217,10 @@ picker {
 }
 
 .account-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 10rpx;
-  max-width: 420rpx;
+  max-width: 360rpx;
   min-height: 46rpx;
   margin-top: 12rpx;
   padding: 6rpx 14rpx 6rpx 8rpx;
@@ -623,10 +623,10 @@ picker {
 }
 
 .family-status {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 10rpx;
-  max-width: 420rpx;
+  max-width: 360rpx;
   min-height: 48rpx;
   margin-top: 12rpx;
   padding: 0 16rpx;
@@ -1139,7 +1139,8 @@ picker {
 }
 
 .course-summary-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 18rpx;
   margin: 14rpx 0;
@@ -1170,6 +1171,8 @@ picker {
   color: #6b7d80;
   font-size: 22rpx;
   line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .course-summary-stats {
@@ -1216,7 +1219,7 @@ picker {
 
 .agenda-card {
   display: grid;
-  grid-template-columns: 104rpx 62rpx 1fr 72rpx;
+  grid-template-columns: 104rpx 62rpx minmax(0, 1fr) auto;
   gap: 14rpx;
   align-items: center;
   min-height: 132rpx;
@@ -1260,9 +1263,12 @@ picker {
 }
 
 .agenda-time {
+  min-width: 0;
   color: #f5a316;
   font-size: 28rpx;
+  line-height: 1.15;
   font-weight: 900;
+  word-break: break-word;
 }
 
 .agenda-icon {
@@ -1292,6 +1298,15 @@ picker {
   font-weight: 900;
 }
 
+.agenda-main {
+  min-width: 0;
+}
+
+.agenda-main .muted {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 .text-edit-button {
   flex: 0 0 auto;
   min-height: 42rpx;
@@ -1310,9 +1325,12 @@ picker {
   font-size: 24rpx;
   font-weight: 900;
   line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .agenda-actions {
+  min-width: 92rpx;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -2589,6 +2607,11 @@ picker {
 }
 
 .family-child-bind-button {
+  flex: 0 0 auto;
+  min-width: 132rpx;
+}
+
+.family-profile-button {
   flex: 0 0 auto;
   min-width: 132rpx;
 }

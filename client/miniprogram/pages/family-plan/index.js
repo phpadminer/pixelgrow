@@ -1012,7 +1012,10 @@ Page({
   },
 
   onAccountNicknameInput(event) {
-    this.setData({ accountNickname: event.detail.value })
+    this.setData({
+      accountNickname: event.detail.value,
+      accountAvatarText: getAccountInitial(event.detail.value),
+    })
   },
 
   onAccountAvatarChoose(event) {
@@ -1045,6 +1048,13 @@ Page({
       return
     }
     this.setData({ loginFormOpen: false })
+  },
+
+  openAccountProfileForm() {
+    this.setData({
+      loginFormOpen: true,
+      familySwitcherOpen: false,
+    })
   },
 
   chooseGuestMode() {
@@ -1644,15 +1654,20 @@ Page({
   async loadFamilies() {
     if (!this.data.session || !this.data.account) return
     const result = await api.listFamilies(this.data.session)
-    const activeFamily = result.activeFamily || this.data.activeFamily || null
+    const families = result.families || []
+    const activeFamily = result.activeFamily || families.find((item) => {
+      const current = this.data.activeFamily || {}
+      return item.familyId === current.familyId || item.familyKey === current.familyKey
+    }) || null
     const session = Object.assign({}, this.data.session, {
-      families: result.families || [],
+      families,
       activeFamily,
+      familyKey: activeFamily ? activeFamily.familyKey : '',
     })
     wx.setStorageSync(SESSION_KEY, session)
     this.setData({
       session,
-      families: result.families || [],
+      families,
       activeFamily,
       familyTitle: getFamilyTitle(session),
     })
@@ -1893,7 +1908,15 @@ Page({
     this.setData({ loading: true })
     try {
       const session = await api.deleteFamily(familyId, this.data.session)
-      this.applySession(session, { swipedFamilyId: '', familySwitcherOpen: true })
+      const remainingFamilies = (session.families || []).filter((item) => item.familyId !== familyId)
+      const activeFamily = session.activeFamily && session.activeFamily.familyId !== familyId ? session.activeFamily : remainingFamilies[0] || null
+      this.applySession(session, {
+        swipedFamilyId: '',
+        familySwitcherOpen: true,
+        families: remainingFamilies,
+        activeFamily,
+        familyTitle: activeFamily ? activeFamily.name : '还没有家庭',
+      })
       await this.fetchPlan()
       await this.loadFamilies()
       await this.loadFamilyManagementInfo()

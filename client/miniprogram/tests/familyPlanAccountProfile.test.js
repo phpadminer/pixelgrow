@@ -11,8 +11,8 @@ assert(
 )
 
 assert(
-  /onAccountNicknameInput\(event\)[\s\S]*?accountNickname: event\.detail\.value/.test(pageJs),
-  'nickname input should update accountNickname'
+  /onAccountNicknameInput\(event\)[\s\S]*?accountNickname: event\.detail\.value[\s\S]*?accountAvatarText: getAccountInitial\(event\.detail\.value\)/.test(pageJs),
+  'nickname input should update accountNickname and the fallback avatar text'
 )
 
 assert(
@@ -53,8 +53,11 @@ assert(
 )
 
 assert(
-  wxml.includes('选择头像昵称后登录'),
-  'login action should make avatar and nickname selection explicit'
+  wxml.includes('保存并替换微信资料')
+    && wxml.includes('bindtap="openAccountProfileForm"')
+    && wxml.includes('更新资料')
+    && /openAccountProfileForm\(\)[\s\S]*?loginFormOpen: true[\s\S]*?familySwitcherOpen: false/.test(pageJs),
+  'login action and current account row should make avatar and nickname replacement explicit'
 )
 
 console.log('familyPlanAccountProfile tests passed')
