@@ -18,6 +18,7 @@ import {
   UpdateFamilyPlanChildDto,
   UpdateFamilyPlanFamilyDto,
   UpdateFamilyPlanMemberDto,
+  UpdateFamilyPlanMemberRoleDto,
   UpdateFamilyPlanCourseDto,
   UpdateFamilyPlanGiftDto,
   UpdateFamilyPlanHabitDto,
@@ -709,6 +710,39 @@ export class FamilyPlanService {
         relation,
       },
     })
+    return this.getCurrentFamilyMembers(authorization)
+  }
+
+  async updateFamilyMemberRole(memberId: string, dto: UpdateFamilyPlanMemberRoleDto, authorization?: string) {
+    const session = this.requireActiveFamilySession(authorization)
+    const operator = await this.getMembership(session.accountId, session.familyId)
+    if (operator.role !== 'owner') {
+      throw new ForbiddenException('只有创建者可以管理成员角色')
+    }
+
+    const target = await this.prisma.familyPlanFamilyMember.findFirst({
+      where: {
+        id: memberId,
+        familyId: session.familyId,
+        status: 'active',
+      },
+    })
+    if (!target) {
+      throw new NotFoundException('成员不存在')
+    }
+    if (target.role === 'owner' || target.accountId === session.accountId) {
+      throw new BadRequestException('创建者角色不能在这里修改')
+    }
+
+    await this.prisma.familyPlanFamilyMember.update({
+      where: {
+        id: target.id,
+      },
+      data: {
+        role: normalizeMemberRole(dto.role),
+      },
+    })
+
     return this.getCurrentFamilyMembers(authorization)
   }
 

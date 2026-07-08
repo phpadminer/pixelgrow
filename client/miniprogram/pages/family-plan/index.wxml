@@ -604,6 +604,17 @@
             <view class="family-member-name">{{item.nickname}}</view>
             <view class="muted">{{item.relationText}} · {{item.roleLabel}} {{item.currentText}}</view>
           </view>
+          <picker
+            wx:if="{{item.canManageRole}}"
+            mode="selector"
+            range="{{memberRoleOptions}}"
+            range-key="label"
+            value="{{item.roleIndex}}"
+            data-member-id="{{item.id}}"
+            bindchange="onMemberRoleChange"
+          >
+            <view class="picker-pill family-member-role-picker">{{memberRoleOptions[item.roleIndex].label}}</view>
+          </picker>
           <button
             wx:if="{{item.isCurrentAccount}}"
             class="secondary-button mini family-profile-button"

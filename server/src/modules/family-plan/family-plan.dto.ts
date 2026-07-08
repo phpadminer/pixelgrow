@@ -257,6 +257,13 @@ export class UpdateFamilyPlanMemberDto {
   relation?: string
 }
 
+export class UpdateFamilyPlanMemberRoleDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['admin', 'parent', 'viewer'])
+  role: 'admin' | 'parent' | 'viewer'
+}
+
 export class CreateFamilyPlanInviteDto {
   @IsString()
   @IsOptional()

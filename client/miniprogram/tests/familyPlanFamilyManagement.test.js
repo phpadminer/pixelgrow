@@ -27,6 +27,11 @@ assert(
 )
 
 assert(
+  /function updateFamilyMemberRole\(memberId, payload, session\)[\s\S]*?request\.put\(`\/family-plan\/families\/current\/members\/\$\{encodeURIComponent\(memberId\)\}\/role`/.test(apiJs),
+  'client api should expose creator-managed member role updates'
+)
+
+assert(
   /@Get\('families\/current\/members'\)[\s\S]*?getCurrentFamilyMembers/.test(controllerTs),
   'server should expose current family member details endpoint'
 )
@@ -34,6 +39,12 @@ assert(
 assert(
   /@Put\('families\/current\/members\/me'\)[\s\S]*?updateCurrentFamilyMember/.test(controllerTs),
   'server should expose current family member relation update endpoint'
+)
+
+assert(
+  /@Put\('families\/current\/members\/:memberId\/role'\)[\s\S]*?updateFamilyMemberRole/.test(controllerTs)
+    && /export class UpdateFamilyPlanMemberRoleDto[\s\S]*?@IsIn\(\['admin', 'parent', 'viewer'\]\)[\s\S]*?role: 'admin' \| 'parent' \| 'viewer'/.test(fs.readFileSync(path.join(__dirname, '../../../server/src/modules/family-plan/family-plan.dto.ts'), 'utf8')),
+  'server should expose owner-only member permission role update endpoint'
 )
 
 assert(
@@ -82,6 +93,11 @@ assert(
 )
 
 assert(
+  /async updateFamilyMemberRole\(memberId: string, dto: UpdateFamilyPlanMemberRoleDto,[\s\S]*?operator\.role !== 'owner'[\s\S]*?只有创建者可以管理成员角色[\s\S]*?target\.role === 'owner'[\s\S]*?normalizeMemberRole\(dto\.role\)/.test(serviceTs),
+  'server should only allow the creator to change non-owner member permission roles'
+)
+
+assert(
   wxml.includes('家庭管理')
     && wxml.includes('家庭 ID')
     && wxml.includes('编辑名称')
@@ -125,9 +141,13 @@ assert(
   wxml.includes('bindchange="onMyRelationChange"')
     && wxml.includes('bindchange="onInviteRoleChange"')
     && wxml.includes('bindchange="onInviteRelationChange"')
+    && wxml.includes('bindchange="onMemberRoleChange"')
+    && wxml.includes('data-member-id="{{item.id}}"')
+    && wxml.includes('wx:if="{{item.canManageRole}}"')
     && /onMyRelationChange\(event\)[\s\S]*?api\.updateCurrentFamilyMember/.test(pageJs)
+    && /onMemberRoleChange\(event\)[\s\S]*?api\.updateFamilyMemberRole/.test(pageJs)
     && /async createFamilyInvite\(\)[\s\S]*?role: this\.data\.inviteRole[\s\S]*?relation: this\.data\.inviteRelation/.test(pageJs),
-  'family management should let current account choose a relation and invite with role plus relation'
+  'family management should let current account choose a relation, creator manage member roles, and invite with role plus relation'
 )
 
 assert(
@@ -197,6 +217,7 @@ assert(
     && wxss.includes('.family-form-sheet .login-submit-button')
     && wxss.includes('.family-row-status')
     && wxss.includes('.family-relation-card')
+    && wxss.includes('.family-member-role-picker')
     && wxss.includes('.invite-setting-row')
     && wxss.includes('grid-template-columns: 104rpx 62rpx minmax(0, 1fr) auto')
     && wxss.includes('overflow-wrap: anywhere')

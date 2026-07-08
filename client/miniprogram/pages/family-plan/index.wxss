@@ -2639,6 +2639,14 @@ picker {
   min-width: 132rpx;
 }
 
+.family-member-role-picker {
+  flex: 0 0 auto;
+  min-width: 118rpx;
+  padding: 12rpx 18rpx;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .family-profile-button {
   flex: 0 0 auto;
   min-width: 132rpx;

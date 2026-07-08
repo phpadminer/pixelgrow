@@ -148,6 +148,12 @@ const INVITE_ROLE_OPTIONS = [
   { label: '只读', value: 'viewer' },
 ]
 
+const MEMBER_ROLE_OPTIONS = [
+  { label: '管理员', value: 'admin' },
+  { label: '家长', value: 'parent' },
+  { label: '只读', value: 'viewer' },
+]
+
 const TAB_TITLES = {
   today: '家庭计划',
   calendar: '日历总览',
@@ -271,12 +277,14 @@ function decodeInviteCode(value) {
   }
 }
 
-function decorateFamilyMember(member) {
+function decorateFamilyMember(member, canManageMembers) {
   const nickname = member.nickname || '微信用户'
   const relationLabel = getFamilyRelationLabel(member.relation)
   return Object.assign({}, member, {
     nickname,
     roleLabel: getFamilyMemberRoleLabel(member.role),
+    roleIndex: findOptionIndex(MEMBER_ROLE_OPTIONS, member.role),
+    canManageRole: Boolean(canManageMembers && !member.isCurrentAccount && member.role !== 'owner'),
     relationLabel,
     relationText: member.relation ? relationLabel : '未设置身份',
     avatarText: getAccountInitial(nickname),
@@ -829,6 +837,7 @@ Page({
     inviteInfo: null,
     relationOptions: FAMILY_RELATION_OPTIONS,
     inviteRoleOptions: INVITE_ROLE_OPTIONS,
+    memberRoleOptions: MEMBER_ROLE_OPTIONS,
     myRelationIndex: 0,
     inviteRoleIndex: 0,
     inviteRelationIndex: 0,
@@ -1720,7 +1729,10 @@ Page({
       return
     }
     const result = await api.getCurrentFamilyMembers(this.data.session)
-    const familyMembers = (result.members || []).map(decorateFamilyMember)
+    const rawMembers = result.members || []
+    const rawCurrentMember = rawMembers.find((member) => member.isCurrentAccount) || null
+    const canManageMemberRoles = Boolean(rawCurrentMember && rawCurrentMember.role === 'owner')
+    const familyMembers = rawMembers.map((member) => decorateFamilyMember(member, canManageMemberRoles))
     const currentMember = familyMembers.find((member) => member.isCurrentAccount) || null
     this.setData({
       familyManageFamily: result.family || this.data.activeFamily,
@@ -1781,6 +1793,24 @@ Page({
       wx.showToast({ title: '家庭身份已更新', icon: 'success' })
     } catch (err) {
       this.showError(err, '更新家庭身份失败')
+      await this.loadFamilyManagementInfo()
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  async onMemberRoleChange(event) {
+    const memberId = event.currentTarget.dataset.memberId
+    const index = Number(event.detail.value || 0)
+    const option = MEMBER_ROLE_OPTIONS[index] || MEMBER_ROLE_OPTIONS[1]
+    if (!memberId) return
+    this.setData({ loading: true })
+    try {
+      await api.updateFamilyMemberRole(memberId, { role: option.value }, this.data.session)
+      await this.loadFamilyManagementInfo()
+      wx.showToast({ title: '成员角色已更新', icon: 'success' })
+    } catch (err) {
+      this.showError(err, '更新成员角色失败')
       await this.loadFamilyManagementInfo()
     } finally {
       this.setData({ loading: false })

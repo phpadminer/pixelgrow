@@ -48,6 +48,10 @@ function updateCurrentFamilyMember(payload, session) {
   return request.put('/family-plan/families/current/members/me', payload, getAuthOptions(session))
 }
 
+function updateFamilyMemberRole(memberId, payload, session) {
+  return request.put(`/family-plan/families/current/members/${encodeURIComponent(memberId)}/role`, payload, getAuthOptions(session))
+}
+
 function createFamily(payload, session) {
   return request.post('/family-plan/families', payload, getAuthOptions(session))
 }
@@ -189,6 +193,7 @@ module.exports = {
   listFamilies,
   getCurrentFamilyMembers,
   updateCurrentFamilyMember,
+  updateFamilyMemberRole,
   createFamily,
   createInvite,
   joinFamilyByInvite,

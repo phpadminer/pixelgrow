@@ -17,6 +17,7 @@ import {
   UpdateFamilyPlanChildDto,
   UpdateFamilyPlanFamilyDto,
   UpdateFamilyPlanMemberDto,
+  UpdateFamilyPlanMemberRoleDto,
   UpdateFamilyPlanCourseDto,
   UpdateFamilyPlanGiftDto,
   UpdateFamilyPlanHabitDto,
@@ -65,6 +66,15 @@ export class FamilyPlanController {
   @Put('families/current/members/me')
   updateCurrentFamilyMember(@Body() dto: UpdateFamilyPlanMemberDto, @Headers('authorization') authorization?: string) {
     return this.familyPlanService.updateCurrentFamilyMember(dto, authorization)
+  }
+
+  @Put('families/current/members/:memberId/role')
+  updateFamilyMemberRole(
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateFamilyPlanMemberRoleDto,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return this.familyPlanService.updateFamilyMemberRole(memberId, dto, authorization)
   }
 
   @Post('families')
