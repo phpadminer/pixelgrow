@@ -261,6 +261,12 @@ function getAccountInitial(name) {
   return value ? value.slice(0, 1) : '微'
 }
 
+function getRenderableAccountAvatarUrl(avatarUrl) {
+  const value = String(avatarUrl || '').trim()
+  if (!value) return ''
+  return /^data:image\//.test(value) || /^https?:\/\//.test(value) ? value : ''
+}
+
 function needsWechatProfile(session) {
   const account = session && session.account ? session.account : null
   if (!account) return false
@@ -281,6 +287,7 @@ function decorateFamilyMember(member, canManageMembers) {
   const nickname = member.nickname || '微信用户'
   const relationLabel = getFamilyRelationLabel(member.relation)
   return Object.assign({}, member, {
+    avatarUrl: getRenderableAccountAvatarUrl(member.avatarUrl),
     nickname,
     roleLabel: getFamilyMemberRoleLabel(member.role),
     roleIndex: findOptionIndex(MEMBER_ROLE_OPTIONS, member.role),
@@ -1066,8 +1073,33 @@ Page({
     })
   },
 
-  onAccountAvatarChoose(event) {
-    this.setData({ accountAvatarUrl: event.detail.avatarUrl })
+  async onAccountAvatarChoose(event) {
+    const avatarUrl = event.detail.avatarUrl
+    this.setData({ accountAvatarUrl: avatarUrl })
+    try {
+      const portableAvatarUrl = await this.prepareAccountAvatarUrl(avatarUrl)
+      this.setData({ accountAvatarUrl: portableAvatarUrl })
+    } catch (err) {
+      wx.showToast({ title: '头像读取失败，请重试', icon: 'none' })
+    }
+  },
+
+  prepareAccountAvatarUrl(avatarUrl) {
+    if (getRenderableAccountAvatarUrl(avatarUrl)) {
+      return Promise.resolve(avatarUrl)
+    }
+    if (!avatarUrl || !wx.getFileSystemManager) {
+      return Promise.resolve('')
+    }
+    const fs = wx.getFileSystemManager()
+    return new Promise((resolve, reject) => {
+      fs.readFile({
+        filePath: avatarUrl,
+        encoding: 'base64',
+        success: (result) => resolve(`data:image/jpeg;base64,${result.data}`),
+        fail: reject,
+      })
+    })
   },
 
   async confirmAccountProfileBeforeLogin() {

@@ -4,6 +4,7 @@ const path = require('path')
 
 const pageJs = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.js'), 'utf8')
 const wxml = fs.readFileSync(path.join(__dirname, '../pages/family-plan/index.wxml'), 'utf8')
+const schema = fs.readFileSync(path.join(__dirname, '../../../server/prisma/schema.prisma'), 'utf8')
 
 assert(
   pageJs.includes("accountNickname: ''") && pageJs.includes("accountAvatarUrl: ''") && pageJs.includes("accountRoleLabel: '家长'"),
@@ -16,8 +17,15 @@ assert(
 )
 
 assert(
-  /onAccountAvatarChoose\(event\)[\s\S]*?accountAvatarUrl: event\.detail\.avatarUrl/.test(pageJs),
-  'avatar chooser should update accountAvatarUrl'
+  /async onAccountAvatarChoose\(event\)[\s\S]*?prepareAccountAvatarUrl\(avatarUrl\)[\s\S]*?accountAvatarUrl: portableAvatarUrl/.test(pageJs)
+    && /prepareAccountAvatarUrl\(avatarUrl\)[\s\S]*?wx\.getFileSystemManager\(\)[\s\S]*?encoding: 'base64'[\s\S]*?data:image\/jpeg;base64,/.test(pageJs),
+  'avatar chooser should persist a portable data-url avatar instead of a WeChat temp file path'
+)
+
+assert(
+  /function getRenderableAccountAvatarUrl\(avatarUrl\)[\s\S]*?\^data:image\\\/[\s\S]*?\^https\?:\\\/\\\//.test(pageJs)
+    && /function decorateFamilyMember\(member,[\s\S]*?avatarUrl: getRenderableAccountAvatarUrl\(member\.avatarUrl\)/.test(pageJs),
+  'family member list should only render portable account avatar urls and fall back for old temp file paths'
 )
 
 assert(
@@ -50,6 +58,11 @@ assert(
     && /restoreWechatSessionOnStart\(\)[\s\S]*?const shouldCompleteProfile = needsWechatProfile\(session\)[\s\S]*?loginFormOpen: shouldCompleteProfile[\s\S]*?familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
     && /restoreWechatSessionFromAction\(\)[\s\S]*?const shouldCompleteProfile = needsWechatProfile\(session\)[\s\S]*?loginFormOpen: shouldCompleteProfile/.test(pageJs),
   'cached and restored WeChat accounts without profile details should be prompted to complete avatar and nickname'
+)
+
+assert(
+  /model FamilyPlanAccount[\s\S]*?avatarUrl\s+String\?\s+@db\.LongText/.test(schema),
+  'account avatarUrl should be long text because WeChat avatar data urls can exceed varchar length'
 )
 
 assert(

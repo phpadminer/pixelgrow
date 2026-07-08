@@ -147,7 +147,7 @@ model FamilyPlanAccount {
   legacyUserId String?  @unique
   unionId      String?
   nickname     String?
-  avatarUrl    String?
+  avatarUrl    String?  @db.LongText
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
