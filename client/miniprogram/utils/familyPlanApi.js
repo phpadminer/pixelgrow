@@ -60,6 +60,14 @@ function switchFamily(familyId, session) {
   return request.post(`/family-plan/families/${encodeURIComponent(familyId)}/switch`, {}, getAuthOptions(session))
 }
 
+function updateFamily(familyId, payload, session) {
+  return request.put(`/family-plan/families/${encodeURIComponent(familyId)}`, payload, getAuthOptions(session))
+}
+
+function deleteFamily(familyId, session) {
+  return request.del(`/family-plan/families/${encodeURIComponent(familyId)}`, {}, getAuthOptions(session))
+}
+
 function updateCompletion(itemKey, completed, session, options = {}) {
   return request.put(
     `/family-plan/completions/${encodeURIComponent(itemKey)}`,
@@ -180,6 +188,8 @@ module.exports = {
   createInvite,
   joinFamilyByInvite,
   switchFamily,
+  updateFamily,
+  deleteFamily,
   updateCompletion,
   createPlanItem,
   createChildProfile,

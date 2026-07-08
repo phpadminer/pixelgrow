@@ -2373,7 +2373,15 @@ picker {
   gap: 14rpx;
 }
 
+.family-row-shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20rpx;
+}
+
 .family-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2383,11 +2391,45 @@ picker {
   border: 2rpx solid rgba(84, 111, 106, 0.14);
   border-radius: 20rpx;
   background: rgba(255, 255, 255, 0.86);
+  transition: transform 0.18s ease;
+}
+
+.family-row.swiped {
+  transform: translateX(-136rpx);
+}
+
+.family-row-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  width: 136rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 0 20rpx 20rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff0ec;
+  color: #e85d4f;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.family-row-delete::after {
+  border: 0;
 }
 
 .family-row.active {
   border-color: rgba(245, 163, 22, 0.48);
   background: rgba(255, 244, 207, 0.82);
+}
+
+.family-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .family-row-title {
@@ -2396,6 +2438,10 @@ picker {
   font-size: 30rpx;
   line-height: 1.25;
   font-weight: 900;
+}
+
+.family-row-edit {
+  flex: 0 0 auto;
 }
 
 .family-row-status {
@@ -2415,6 +2461,18 @@ picker {
   border: 2rpx solid rgba(245, 163, 22, 0.28);
   border-radius: 20rpx;
   background: rgba(255, 248, 232, 0.82);
+}
+
+.family-manage-card > view:first-child {
+  min-width: 0;
+}
+
+.family-manage-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  align-items: stretch;
 }
 
 .family-manage-title {

@@ -243,6 +243,13 @@ export class CreateFamilyPlanFamilyDto {
   name: string
 }
 
+export class UpdateFamilyPlanFamilyDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(40)
+  name: string
+}
+
 export class CreateFamilyPlanInviteDto {
   @IsString()
   @IsOptional()

@@ -16,13 +16,32 @@ assert(
 )
 
 assert(
+  /function updateFamily\(familyId, payload, session\)[\s\S]*?request\.put\(`\/family-plan\/families\/\$\{encodeURIComponent\(familyId\)\}`/.test(apiJs)
+    && /function deleteFamily\(familyId, session\)[\s\S]*?request\.del\(`\/family-plan\/families\/\$\{encodeURIComponent\(familyId\)\}`/.test(apiJs),
+  'client api should expose family rename and remove operations'
+)
+
+assert(
   /@Get\('families\/current\/members'\)[\s\S]*?getCurrentFamilyMembers/.test(controllerTs),
   'server should expose current family member details endpoint'
 )
 
 assert(
+  /@Put\('families\/:id'\)[\s\S]*?updateFamily/.test(controllerTs)
+    && /@Delete\('families\/:id'\)[\s\S]*?deleteFamily/.test(controllerTs)
+    && /export class UpdateFamilyPlanFamilyDto[\s\S]*?name: string/.test(fs.readFileSync(path.join(__dirname, '../../../server/src/modules/family-plan/family-plan.dto.ts'), 'utf8')),
+  'server should expose family rename and remove endpoints'
+)
+
+assert(
   /async getCurrentFamilyMembers\(authorization\?: string\)[\s\S]*?requireActiveFamilySession[\s\S]*?familyPlanFamilyMember\.findMany[\s\S]*?familyPlanChild\.findMany/.test(serviceTs),
   'server member endpoint should return active members and children for the current family'
+)
+
+assert(
+  /async updateFamily\(id: string, dto: UpdateFamilyPlanFamilyDto[\s\S]*?normalizeFamilyName\(dto\.name\)[\s\S]*?toParentAuthResult/.test(serviceTs)
+    && /async deleteFamily\(id: string[\s\S]*?status: 'inactive'[\s\S]*?buildWechatParentSession/.test(serviceTs),
+  'server should rename a joined family and remove the current account membership without deleting plan data'
 )
 
 assert(
@@ -41,10 +60,22 @@ assert(
 assert(
   wxml.includes('家庭管理')
     && wxml.includes('家庭 ID')
+    && wxml.includes('编辑名称')
     && wxml.includes('已绑定微信家人')
     && wxml.includes('孩子账号')
     && wxml.includes('open-type="share"'),
   'family sheet should be upgraded into a family management surface with sharing'
+)
+
+assert(
+  wxml.includes('bindtouchstart="onFamilyRowTouchStart"')
+    && wxml.includes('bindtouchend="onFamilyRowTouchEnd"')
+    && wxml.includes('bindtap="deleteFamily"')
+    && wxml.includes('family-row-delete')
+    && /openEditFamilyForm\(event\)[\s\S]*?editingFamilyId/.test(pageJs)
+    && /submitEditFamily\(\)[\s\S]*?api\.updateFamily/.test(pageJs)
+    && /deleteFamily\(event\)[\s\S]*?api\.deleteFamily/.test(pageJs),
+  'family list should support edit and left-swipe remove actions'
 )
 
 assert(
@@ -114,6 +145,8 @@ assert(
     && wxss.includes('.family-member-row')
     && wxss.includes('.family-child-row')
     && wxss.includes('.family-form-sheet')
+    && wxss.includes('.family-row-shell')
+    && wxss.includes('.family-row-delete')
     && wxss.includes('.family-child-bind-button'),
   'family management UI should have warm styled member rows'
 )

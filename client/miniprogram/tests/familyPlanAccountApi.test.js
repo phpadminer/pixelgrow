@@ -75,6 +75,19 @@ async function run() {
   assert.strictEqual(switchCall.url, '/family-plan/families/family-b/switch')
   assert.strictEqual(switchCall.options.header.Authorization, 'Bearer token-1')
 
+  await api.updateFamily('family-b', { name: '新家庭' }, session)
+  const updateFamilyCall = calls.pop()
+  assert.strictEqual(updateFamilyCall.method, 'PUT')
+  assert.strictEqual(updateFamilyCall.url, '/family-plan/families/family-b')
+  assert.deepStrictEqual(updateFamilyCall.data, { name: '新家庭' })
+  assert.strictEqual(updateFamilyCall.options.header.Authorization, 'Bearer token-1')
+
+  await api.deleteFamily('family-b', session)
+  const deleteFamilyCall = calls.pop()
+  assert.strictEqual(deleteFamilyCall.method, 'DELETE')
+  assert.strictEqual(deleteFamilyCall.url, '/family-plan/families/family-b')
+  assert.strictEqual(deleteFamilyCall.options.header.Authorization, 'Bearer token-1')
+
   await api.createPlanItem('tasks', { title: '任务' }, session)
   assert.strictEqual(calls.pop().data.familyKey, 'family-a')
 

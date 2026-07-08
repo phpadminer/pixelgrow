@@ -779,6 +779,11 @@ Page({
     pendingGuestSavePlan: null,
     familySwitcherOpen: false,
     createFamilyFormOpen: false,
+    editFamilyFormOpen: false,
+    editingFamilyId: '',
+    editFamilyName: '',
+    swipedFamilyId: '',
+    familyTouchStartX: 0,
     joinFamilyFormOpen: false,
     familyName: '我的家庭',
     inviteCode: '',
@@ -1086,6 +1091,7 @@ Page({
       loginFormOpen: false,
       familySwitcherOpen: false,
       createFamilyFormOpen: false,
+      editFamilyFormOpen: false,
       joinFamilyFormOpen: false,
     }, extraPatch))
   },
@@ -1254,6 +1260,10 @@ Page({
       loginFormOpen: false,
       familySwitcherOpen: false,
       createFamilyFormOpen: false,
+      editFamilyFormOpen: false,
+      editingFamilyId: '',
+      editFamilyName: '',
+      swipedFamilyId: '',
       joinFamilyFormOpen: false,
       pendingGuestSavePlan: null,
       inviteInfo: null,
@@ -1658,7 +1668,7 @@ Page({
   },
 
   closeFamilySwitcher() {
-    this.setData({ familySwitcherOpen: false, inviteInfo: null })
+    this.setData({ familySwitcherOpen: false, inviteInfo: null, swipedFamilyId: '' })
   },
 
   copyFamilyKey() {
@@ -1696,6 +1706,26 @@ Page({
 
   closeCreateFamilyForm() {
     this.setData({ createFamilyFormOpen: false })
+  },
+
+  openEditFamilyForm(event) {
+    const familyId = event.currentTarget.dataset.id || (this.data.activeFamily && this.data.activeFamily.familyId) || ''
+    const familyName = event.currentTarget.dataset.name || (this.data.activeFamily && this.data.activeFamily.name) || ''
+    if (!familyId) {
+      wx.showToast({ title: '请选择家庭', icon: 'none' })
+      return
+    }
+    this.setData({
+      familySwitcherOpen: false,
+      editFamilyFormOpen: true,
+      editingFamilyId: familyId,
+      editFamilyName: familyName || '我的家庭',
+      swipedFamilyId: '',
+    })
+  },
+
+  closeEditFamilyForm() {
+    this.setData({ editFamilyFormOpen: false, editingFamilyId: '', editFamilyName: '' })
   },
 
   openJoinFamilyForm() {
@@ -1740,6 +1770,32 @@ Page({
     }
   },
 
+  async submitEditFamily() {
+    const familyId = this.data.editingFamilyId
+    const name = String(this.data.editFamilyName || '').trim()
+    if (!familyId) {
+      wx.showToast({ title: '请选择家庭', icon: 'none' })
+      return
+    }
+    if (!name) {
+      wx.showToast({ title: '家庭名称必填', icon: 'none' })
+      return
+    }
+    this.setData({ loading: true })
+    try {
+      const session = await api.updateFamily(familyId, { name }, this.data.session)
+      this.applySession(session, { editFamilyFormOpen: false, editingFamilyId: '', editFamilyName: '' })
+      await this.fetchPlan()
+      await this.loadFamilies()
+      await this.loadFamilyManagementInfo()
+      wx.showToast({ title: '家庭名称已更新', icon: 'success' })
+    } catch (err) {
+      this.showError(err, '修改家庭失败')
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
   async submitJoinFamily() {
     const inviteCode = String(this.data.inviteCode || '').trim()
     if (!inviteCode) {
@@ -1775,6 +1831,52 @@ Page({
       if (saved === false) wx.showToast({ title: '已切换家庭', icon: 'success' })
     } catch (err) {
       this.showError(err, '切换家庭失败')
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  onFamilyRowTouchStart(event) {
+    const touch = event.touches && event.touches[0]
+    this.setData({ familyTouchStartX: touch ? touch.clientX : 0 })
+  },
+
+  onFamilyRowTouchEnd(event) {
+    const familyId = event.currentTarget.dataset.id || ''
+    const touch = event.changedTouches && event.changedTouches[0]
+    const endX = touch ? touch.clientX : this.data.familyTouchStartX
+    const deltaX = endX - this.data.familyTouchStartX
+    this.setData({ swipedFamilyId: deltaX < -40 ? familyId : '' })
+  },
+
+  async deleteFamily(event) {
+    const familyId = event.currentTarget.dataset.id || ''
+    if (!familyId) return
+    const confirmed = await new Promise((resolve) => {
+      wx.showModal({
+        title: '移出家庭',
+        content: '只会把当前微信账号从这个家庭移出，不会删除孩子、课程、积分等家庭数据。',
+        confirmText: '移出',
+        confirmColor: '#e85d4f',
+        cancelText: '取消',
+        success: (res) => resolve(Boolean(res.confirm)),
+        fail: () => resolve(false),
+      })
+    })
+    if (!confirmed) {
+      this.setData({ swipedFamilyId: '' })
+      return
+    }
+    this.setData({ loading: true })
+    try {
+      const session = await api.deleteFamily(familyId, this.data.session)
+      this.applySession(session, { swipedFamilyId: '', familySwitcherOpen: true })
+      await this.fetchPlan()
+      await this.loadFamilies()
+      await this.loadFamilyManagementInfo()
+      wx.showToast({ title: '已移出家庭', icon: 'success' })
+    } catch (err) {
+      this.showError(err, '移出家庭失败')
     } finally {
       this.setData({ loading: false })
     }

@@ -565,7 +565,15 @@
           <view class="family-manage-title">{{familyManageFamily.name}}</view>
           <view class="helper-text">家庭 ID：{{familyManageFamily.familyKey}}</view>
         </view>
-        <button class="secondary-button compact" bindtap="copyFamilyKey">复制 ID</button>
+        <view class="family-manage-actions">
+          <button class="secondary-button compact" bindtap="copyFamilyKey">复制 ID</button>
+          <button
+            class="secondary-button compact"
+            data-id="{{familyManageFamily.familyId}}"
+            data-name="{{familyManageFamily.name}}"
+            bindtap="openEditFamilyForm"
+          >编辑名称</button>
+        </view>
       </view>
 
       <view wx:if="{{familyMembers.length > 0}}" class="family-manage-section">
@@ -622,15 +630,33 @@
         <view
           wx:for="{{families}}"
           wx:key="familyId"
-          class="family-row {{activeFamily && item.familyKey === activeFamily.familyKey ? 'active' : ''}}"
-          data-id="{{item.familyId}}"
-          bindtap="switchFamily"
+          class="family-row-shell"
         >
-          <view>
-            <view class="family-row-title">{{item.name}}</view>
-            <view class="muted">{{item.role === 'owner' ? '创建者' : item.role === 'admin' ? '管理员' : item.role === 'viewer' ? '只读成员' : '家长成员'}}</view>
+          <button
+            class="family-row-delete"
+            data-id="{{item.familyId}}"
+            loading="{{loading}}"
+            bindtap="deleteFamily"
+          >移出</button>
+          <view
+            class="family-row {{activeFamily && item.familyKey === activeFamily.familyKey ? 'active' : ''}} {{swipedFamilyId === item.familyId ? 'swiped' : ''}}"
+            data-id="{{item.familyId}}"
+            bindtap="switchFamily"
+            bindtouchstart="onFamilyRowTouchStart"
+            bindtouchend="onFamilyRowTouchEnd"
+          >
+            <view class="family-row-main">
+              <view class="family-row-title">{{item.name}}</view>
+              <view class="muted">{{item.role === 'owner' ? '创建者' : item.role === 'admin' ? '管理员' : item.role === 'viewer' ? '只读成员' : '家长成员'}}</view>
+            </view>
+            <button
+              class="secondary-button mini family-row-edit"
+              data-id="{{item.familyId}}"
+              data-name="{{item.name}}"
+              catchtap="openEditFamilyForm"
+            >编辑</button>
+            <view class="family-row-status">{{activeFamily && item.familyKey === activeFamily.familyKey ? '当前' : '进入'}}</view>
           </view>
-          <view class="family-row-status">{{activeFamily && item.familyKey === activeFamily.familyKey ? '当前' : '进入'}}</view>
         </view>
       </view>
       <view class="empty-card compact" wx:else>还没有加入家庭。</view>
@@ -665,6 +691,21 @@
       <view class="field-label">家庭名称</view>
       <input class="text-input" data-field="familyName" value="{{familyName}}" bindinput="onFamilyInput" placeholder="例如：顾家" />
       <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitCreateFamily">创建家庭</button>
+    </view>
+  </view>
+
+  <view wx:if="{{editFamilyFormOpen}}" class="modal-mask">
+    <view class="sheet family-form-sheet">
+      <view class="sheet-head">
+        <view>
+          <view class="eyebrow">家庭</view>
+          <view class="sheet-title">编辑家庭</view>
+        </view>
+        <button class="ghost-button" bindtap="closeEditFamilyForm">关闭</button>
+      </view>
+      <view class="field-label">家庭名称</view>
+      <input class="text-input" data-field="editFamilyName" value="{{editFamilyName}}" bindinput="onFamilyInput" placeholder="例如：顾家" />
+      <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="submitEditFamily">保存家庭</button>
     </view>
   </view>
 

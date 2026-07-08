@@ -16,6 +16,7 @@ import {
   JoinFamilyPlanInviteDto,
   ParentLoginDto,
   UpdateFamilyPlanChildDto,
+  UpdateFamilyPlanFamilyDto,
   UpdateFamilyPlanCourseDto,
   UpdateFamilyPlanGiftDto,
   UpdateFamilyPlanHabitDto,
@@ -699,6 +700,51 @@ export class FamilyPlanService {
       throw new ForbiddenException('你还没有加入这个家庭')
     }
     return this.toParentAuthResult(session.accountId, membership)
+  }
+
+  async updateFamily(id: string, dto: UpdateFamilyPlanFamilyDto, authorization?: string) {
+    const session = this.requireAccountSession(authorization)
+    const membership = await this.findMembershipByFamilyIdentity(session.accountId, id)
+    if (!membership) {
+      throw new ForbiddenException('你还没有加入这个家庭')
+    }
+    if (!['owner', 'admin'].includes(membership.role)) {
+      throw new ForbiddenException('只有管理员可以修改家庭名称')
+    }
+    await this.prisma.familyPlanFamily.update({
+      where: {
+        id: membership.familyId,
+      },
+      data: {
+        name: normalizeFamilyName(dto.name),
+      },
+    })
+    const updatedMembership = await this.getMembership(session.accountId, membership.familyId)
+    return this.toParentAuthResult(session.accountId, updatedMembership)
+  }
+
+  async deleteFamily(id: string, authorization?: string) {
+    const session = this.requireAccountSession(authorization)
+    const membership = await this.findMembershipByFamilyIdentity(session.accountId, id)
+    if (!membership) {
+      throw new ForbiddenException('你还没有加入这个家庭')
+    }
+    await this.prisma.familyPlanFamilyMember.update({
+      where: {
+        familyId_accountId: {
+          familyId: membership.familyId,
+          accountId: session.accountId,
+        },
+      },
+      data: {
+        status: 'inactive',
+      },
+    })
+    const account = await this.prisma.familyPlanAccount.findUnique({ where: { id: session.accountId } })
+    if (!account) {
+      throw new UnauthorizedException('账号不存在')
+    }
+    return this.buildWechatParentSession(account)
   }
 
   async createInvite(dto: CreateFamilyPlanInviteDto, authorization?: string) {

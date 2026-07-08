@@ -15,6 +15,7 @@ import {
   JoinFamilyPlanInviteDto,
   ParentLoginDto,
   UpdateFamilyPlanChildDto,
+  UpdateFamilyPlanFamilyDto,
   UpdateFamilyPlanCourseDto,
   UpdateFamilyPlanGiftDto,
   UpdateFamilyPlanHabitDto,
@@ -68,6 +69,16 @@ export class FamilyPlanController {
   @Post('families/:id/switch')
   switchFamily(@Param('id') id: string, @Headers('authorization') authorization?: string) {
     return this.familyPlanService.switchFamily(id, authorization)
+  }
+
+  @Put('families/:id')
+  updateFamily(@Param('id') id: string, @Body() dto: UpdateFamilyPlanFamilyDto, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.updateFamily(id, dto, authorization)
+  }
+
+  @Delete('families/:id')
+  deleteFamily(@Param('id') id: string, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.deleteFamily(id, authorization)
   }
 
   @Post('invites')

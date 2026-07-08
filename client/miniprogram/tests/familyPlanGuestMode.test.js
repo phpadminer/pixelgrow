@@ -26,6 +26,12 @@ assert.strictEqual(guestSession.expiresAt, 1000 + 3 * 24 * 60 * 60 * 1000)
 assert.strictEqual(isGuestExpired(guestSession, guestSession.expiresAt - 1), false)
 assert.strictEqual(isGuestExpired(guestSession, guestSession.expiresAt), true)
 
+assert(
+  /getOrCreateGuestSession\(\)[\s\S]*?if \(isGuestExpired\(guestSession, now\)\) \{[\s\S]*?guestSession = createGuestSession\(now\)/.test(pageJs)
+    && !/GUEST_VERSION|guestStorageVersion|storageVersion|versionedGuest/i.test(pageJs),
+  'guest data should reset by expiry or manual clear, not app version changes'
+)
+
 const original = {
   'task-homework-2026-07-06': {
     completed: false,
