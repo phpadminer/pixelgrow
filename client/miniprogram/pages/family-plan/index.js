@@ -906,9 +906,13 @@ Page({
     const activeFamily = getActiveFamily(session)
     const today = todayString()
     const inviteCode = decodeInviteCode(options && options.inviteCode)
+    const shouldCompleteProfile = needsWechatProfile(session)
     this.setData({
       session,
       account: session && session.account ? session.account : null,
+      accountNickname: session && session.account && session.account.nickname ? session.account.nickname : '',
+      accountAvatarUrl: session && session.account && session.account.avatarUrl ? session.account.avatarUrl : '',
+      accountAvatarText: getAccountInitial(session && session.account && session.account.nickname ? session.account.nickname : ''),
       families: session && Array.isArray(session.families) ? session.families : activeFamily ? [activeFamily] : [],
       activeFamily,
       familyTitle: getFamilyTitle(session),
@@ -928,7 +932,8 @@ Page({
       itemDraft: defaultItemDraft(today),
       guestNoticeDismissed: Boolean(wx.getStorageSync(GUEST_NOTICE_DISMISSED_KEY)),
       customNavPadding: getCustomNavPadding(),
-      familySwitcherOpen: shouldOpenFamilySwitcherOnEntry(session),
+      loginFormOpen: shouldCompleteProfile,
+      familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry(session),
       joinFamilyFormOpen: Boolean(inviteCode && session && session.account),
       inviteCode,
     })

@@ -46,9 +46,10 @@ assert(
 
 assert(
   /function needsWechatProfile\(session\)[\s\S]*?nickname === '微信用户'[\s\S]*?!account\.avatarUrl/.test(pageJs)
+    && /onLoad\(options = \{\}\)[\s\S]*?const shouldCompleteProfile = needsWechatProfile\(session\)[\s\S]*?accountNickname: session && session\.account && session\.account\.nickname \? session\.account\.nickname : ''[\s\S]*?loginFormOpen: shouldCompleteProfile[\s\S]*?familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
     && /restoreWechatSessionOnStart\(\)[\s\S]*?const shouldCompleteProfile = needsWechatProfile\(session\)[\s\S]*?loginFormOpen: shouldCompleteProfile[\s\S]*?familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
     && /restoreWechatSessionFromAction\(\)[\s\S]*?const shouldCompleteProfile = needsWechatProfile\(session\)[\s\S]*?loginFormOpen: shouldCompleteProfile/.test(pageJs),
-  'restored WeChat accounts without profile details should be prompted to complete avatar and nickname'
+  'cached and restored WeChat accounts without profile details should be prompted to complete avatar and nickname'
 )
 
 assert(

@@ -147,6 +147,8 @@ assert(
     && wxss.includes('.family-form-sheet')
     && wxss.includes('.family-row-shell')
     && wxss.includes('.family-row-delete')
+    && wxss.includes('.family-form-sheet .login-submit-button')
+    && wxss.includes('.family-row-status')
     && wxss.includes('.family-child-bind-button'),
   'family management UI should have warm styled member rows'
 )

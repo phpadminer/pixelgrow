@@ -2265,7 +2265,15 @@ picker {
 }
 
 .family-form-sheet {
-  padding: 34rpx 34rpx calc(44rpx + env(safe-area-inset-bottom));
+  padding: 34rpx 34rpx calc(64rpx + env(safe-area-inset-bottom));
+}
+
+.family-form-sheet .text-input {
+  margin-bottom: 24rpx;
+}
+
+.family-form-sheet .login-submit-button {
+  margin-top: 8rpx;
 }
 
 .family-form-helper {
@@ -2424,10 +2432,10 @@ picker {
 .family-row {
   position: relative;
   z-index: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 18rpx;
+  gap: 10rpx;
   min-height: 96rpx;
   padding: 20rpx 22rpx;
   border: 2rpx solid rgba(84, 111, 106, 0.14);
@@ -2484,12 +2492,18 @@ picker {
 
 .family-row-edit {
   flex: 0 0 auto;
+  min-width: 86rpx;
+  padding: 0 14rpx;
+  font-size: 22rpx;
 }
 
 .family-row-status {
   flex: 0 0 auto;
+  min-width: 62rpx;
   color: #d8870c;
-  font-size: 24rpx;
+  font-size: 22rpx;
+  line-height: 1.1;
+  text-align: right;
   font-weight: 900;
 }
 
