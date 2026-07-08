@@ -34,6 +34,7 @@ const AUDIT_FAMILY_KEY = 'audit-family'
 const AUDIT_INVITE_CODE = process.env.FAMILY_PLAN_AUDIT_INVITE_CODE || 'AUDIT2026'
 const PARENT_DEMO_CODE = '123456'
 const TOKEN_SECRET = process.env.FAMILY_PLAN_TOKEN_SECRET || 'family-plan-dev-secret'
+const APP_TIME_ZONE = process.env.FAMILY_PLAN_TIME_ZONE || 'Asia/Shanghai'
 const SEED_MODES = ['demo', 'starter', 'off'] as const
 const MAX_INLINE_GIFT_IMAGE_LENGTH = 200000
 const FAMILY_MEMBER_ROLES = ['owner', 'admin', 'parent', 'viewer'] as const
@@ -334,11 +335,27 @@ function rewardData(
   }
 }
 
+function getZonedDateParts(value = new Date(), timeZone = APP_TIME_ZONE) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    hourCycle: 'h23',
+  }).formatToParts(value)
+  const getPart = (type: string) => parts.find((part) => part.type === type)?.value || ''
+  return {
+    date: `${getPart('year')}-${getPart('month')}-${getPart('day')}`,
+    hour: Number(getPart('hour')),
+    minute: Number(getPart('minute')),
+  }
+}
+
 function localDateString(value = new Date()) {
-  const year = value.getFullYear()
-  const month = String(value.getMonth() + 1).padStart(2, '0')
-  const day = String(value.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return getZonedDateParts(value).date
 }
 
 function timeToMinutes(time?: string | null) {
@@ -351,12 +368,12 @@ function timeToMinutes(time?: string | null) {
 }
 
 function isBeforeStartTime(date: string, time?: string | null, now = new Date()) {
-  const today = localDateString(now)
-  if (date > today) return true
-  if (date < today) return false
+  const current = getZonedDateParts(now)
+  if (date > current.date) return true
+  if (date < current.date) return false
   const startMinutes = timeToMinutes(time)
   if (startMinutes === null) return false
-  return now.getHours() * 60 + now.getMinutes() < startMinutes
+  return current.hour * 60 + current.minute < startMinutes
 }
 
 function getWeekdayFromDate(date: string) {
