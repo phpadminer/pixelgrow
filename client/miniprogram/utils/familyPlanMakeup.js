@@ -94,7 +94,7 @@ function decorateAgendaActions(items, date, today, options = {}) {
     if (item.completed) {
       return Object.assign({}, item, {
         statusText: canUndoCompletion ? '撤销完成' : '已完成',
-        actionText: canUndoCompletion ? '撤销' : '已完成',
+        actionText: canUndoCompletion ? '撤销完成' : '已完成',
         canToggleCompletion: canUndoCompletion,
         pendingCompletion: false,
         isMakeup: Boolean(item.completionIsMakeup),

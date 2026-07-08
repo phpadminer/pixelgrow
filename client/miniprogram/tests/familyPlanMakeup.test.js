@@ -96,7 +96,7 @@ function testParentCanUndoConfirmedCompletion() {
 
   assert.strictEqual(item.canToggleCompletion, true)
   assert.strictEqual(item.statusText, '撤销完成')
-  assert.strictEqual(item.actionText, '撤销')
+  assert.strictEqual(item.actionText, '撤销完成')
   assert.strictEqual(item.completionPointsDelta, 4)
 }
 

@@ -1375,7 +1375,7 @@ picker {
 }
 
 .agenda-action-button {
-  min-width: 92rpx;
+  min-width: 132rpx;
   height: 58rpx;
   padding: 0 18rpx;
   border-radius: 999rpx;
@@ -1385,6 +1385,7 @@ picker {
   font-size: 23rpx;
   line-height: 54rpx;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .agenda-action-button::after {
@@ -1695,7 +1696,7 @@ picker {
 
 .list-status-button {
   flex: 0 0 auto;
-  min-width: 116rpx;
+  min-width: 132rpx;
   height: 56rpx;
   padding: 0 18rpx;
   border: 2rpx solid rgba(245, 163, 22, 0.36);
@@ -1705,6 +1706,7 @@ picker {
   font-size: 24rpx;
   line-height: 52rpx;
   font-weight: 900;
+  white-space: nowrap;
   box-shadow: none;
 }
 
@@ -2583,6 +2585,7 @@ picker {
   color: #c57d00;
   font-size: 24rpx;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .family-manage-section {

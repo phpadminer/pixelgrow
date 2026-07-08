@@ -217,6 +217,7 @@ assert(
     && wxss.includes('.family-form-sheet .login-submit-button')
     && wxss.includes('.family-row-status')
     && wxss.includes('.family-relation-card')
+    && /\.picker-pill \{[\s\S]*?font-weight: 900;\n\s+white-space: nowrap;[\s\S]*?\n\}/.test(wxss)
     && wxss.includes('.family-member-role-picker')
     && wxss.includes('.invite-setting-row')
     && wxss.includes('grid-template-columns: 104rpx 62rpx minmax(0, 1fr) auto')
