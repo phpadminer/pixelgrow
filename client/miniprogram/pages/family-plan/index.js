@@ -284,6 +284,8 @@ function decorateFamilyMember(member, canManageMembers) {
     nickname,
     roleLabel: getFamilyMemberRoleLabel(member.role),
     roleIndex: findOptionIndex(MEMBER_ROLE_OPTIONS, member.role),
+    relationIndex: findOptionIndex(FAMILY_RELATION_OPTIONS, member.relation),
+    canManageRelation: Boolean(canManageMembers && !member.isCurrentAccount && member.role !== 'owner'),
     canManageRole: Boolean(canManageMembers && !member.isCurrentAccount && member.role !== 'owner'),
     relationLabel,
     relationText: member.relation ? relationLabel : '未设置身份',
@@ -1793,6 +1795,24 @@ Page({
       wx.showToast({ title: '家庭身份已更新', icon: 'success' })
     } catch (err) {
       this.showError(err, '更新家庭身份失败')
+      await this.loadFamilyManagementInfo()
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  async onMemberRelationChange(event) {
+    const memberId = event.currentTarget.dataset.memberId
+    const index = Number(event.detail.value || 0)
+    const option = FAMILY_RELATION_OPTIONS[index] || FAMILY_RELATION_OPTIONS[0]
+    if (!memberId) return
+    this.setData({ loading: true })
+    try {
+      await api.updateFamilyMember(memberId, { relation: option.value }, this.data.session)
+      await this.loadFamilyManagementInfo()
+      wx.showToast({ title: '成员身份已更新', icon: 'success' })
+    } catch (err) {
+      this.showError(err, '更新成员身份失败')
       await this.loadFamilyManagementInfo()
     } finally {
       this.setData({ loading: false })

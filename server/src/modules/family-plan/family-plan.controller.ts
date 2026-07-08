@@ -68,6 +68,15 @@ export class FamilyPlanController {
     return this.familyPlanService.updateCurrentFamilyMember(dto, authorization)
   }
 
+  @Put('families/current/members/:memberId')
+  updateFamilyMember(
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateFamilyPlanMemberDto,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return this.familyPlanService.updateFamilyMember(memberId, dto, authorization)
+  }
+
   @Put('families/current/members/:memberId/role')
   updateFamilyMemberRole(
     @Param('memberId') memberId: string,

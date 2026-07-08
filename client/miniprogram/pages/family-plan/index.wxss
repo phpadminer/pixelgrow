@@ -2637,14 +2637,22 @@ picker {
   font-weight: 900;
 }
 
+.family-member-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  align-items: stretch;
+}
+
 .family-child-bind-button {
   flex: 0 0 auto;
   min-width: 132rpx;
 }
 
+.family-member-relation-picker,
 .family-member-role-picker {
-  flex: 0 0 auto;
-  min-width: 118rpx;
+  min-width: 126rpx;
   padding: 12rpx 18rpx;
   text-align: center;
   white-space: nowrap;

@@ -730,6 +730,56 @@ export class FamilyPlanService {
     return this.getCurrentFamilyMembers(authorization)
   }
 
+  async updateFamilyMember(memberId: string, dto: UpdateFamilyPlanMemberDto, authorization?: string) {
+    const session = this.requireActiveFamilySession(authorization)
+    const operator = await this.getMembership(session.accountId, session.familyId)
+    if (operator.role !== 'owner') {
+      throw new ForbiddenException('只有创建者可以管理成员身份')
+    }
+
+    const target = await this.prisma.familyPlanFamilyMember.findFirst({
+      where: {
+        id: memberId,
+        familyId: session.familyId,
+        status: 'active',
+      },
+    })
+    if (!target) {
+      throw new NotFoundException('成员不存在')
+    }
+    if (target.role === 'owner' || target.accountId === session.accountId) {
+      throw new BadRequestException('创建者身份请在我的家庭身份中修改')
+    }
+
+    const relation = normalizeFamilyRelation(dto.relation)
+    if (relation) {
+      const existing = await this.prisma.familyPlanFamilyMember.findFirst({
+        where: {
+          familyId: session.familyId,
+          relation,
+          status: 'active',
+          NOT: {
+            accountId: target.accountId,
+          },
+        },
+      })
+      if (existing) {
+        throw new BadRequestException('这个家庭身份已经有人使用')
+      }
+    }
+
+    await this.prisma.familyPlanFamilyMember.update({
+      where: {
+        id: target.id,
+      },
+      data: {
+        relation,
+      },
+    })
+
+    return this.getCurrentFamilyMembers(authorization)
+  }
+
   async updateFamilyMemberRole(memberId: string, dto: UpdateFamilyPlanMemberRoleDto, authorization?: string) {
     const session = this.requireActiveFamilySession(authorization)
     const operator = await this.getMembership(session.accountId, session.familyId)

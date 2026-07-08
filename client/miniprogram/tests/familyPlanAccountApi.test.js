@@ -69,6 +69,13 @@ async function run() {
   assert.deepStrictEqual(updateMemberCall.data, { relation: 'father' })
   assert.strictEqual(updateMemberCall.options.header.Authorization, 'Bearer token-1')
 
+  await api.updateFamilyMember('member-1', { relation: 'mother' }, session)
+  const updateOtherMemberCall = calls.pop()
+  assert.strictEqual(updateOtherMemberCall.method, 'PUT')
+  assert.strictEqual(updateOtherMemberCall.url, '/family-plan/families/current/members/member-1')
+  assert.deepStrictEqual(updateOtherMemberCall.data, { relation: 'mother' })
+  assert.strictEqual(updateOtherMemberCall.options.header.Authorization, 'Bearer token-1')
+
   await api.updateFamilyMemberRole('member-1', { role: 'admin' }, session)
   const updateMemberRoleCall = calls.pop()
   assert.strictEqual(updateMemberRoleCall.method, 'PUT')

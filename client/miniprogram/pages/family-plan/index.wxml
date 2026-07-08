@@ -604,22 +604,35 @@
             <view class="family-member-name">{{item.nickname}}</view>
             <view class="muted">{{item.relationText}} · {{item.roleLabel}} {{item.currentText}}</view>
           </view>
-          <picker
-            wx:if="{{item.canManageRole}}"
-            mode="selector"
-            range="{{memberRoleOptions}}"
-            range-key="label"
-            value="{{item.roleIndex}}"
-            data-member-id="{{item.id}}"
-            bindchange="onMemberRoleChange"
-          >
-            <view class="picker-pill family-member-role-picker">{{memberRoleOptions[item.roleIndex].label}}</view>
-          </picker>
-          <button
-            wx:if="{{item.isCurrentAccount}}"
-            class="secondary-button mini family-profile-button"
-            bindtap="openAccountProfileForm"
-          >更新资料</button>
+          <view wx:if="{{item.canManageRelation || item.canManageRole || item.isCurrentAccount}}" class="family-member-actions">
+            <picker
+              wx:if="{{item.canManageRelation}}"
+              mode="selector"
+              range="{{relationOptions}}"
+              range-key="label"
+              value="{{item.relationIndex}}"
+              data-member-id="{{item.id}}"
+              bindchange="onMemberRelationChange"
+            >
+              <view class="picker-pill family-member-relation-picker">{{relationOptions[item.relationIndex].label}}</view>
+            </picker>
+            <picker
+              wx:if="{{item.canManageRole}}"
+              mode="selector"
+              range="{{memberRoleOptions}}"
+              range-key="label"
+              value="{{item.roleIndex}}"
+              data-member-id="{{item.id}}"
+              bindchange="onMemberRoleChange"
+            >
+              <view class="picker-pill family-member-role-picker">{{memberRoleOptions[item.roleIndex].label}}</view>
+            </picker>
+            <button
+              wx:if="{{item.isCurrentAccount}}"
+              class="secondary-button mini family-profile-button"
+              bindtap="openAccountProfileForm"
+            >更新资料</button>
+          </view>
         </view>
       </view>
 

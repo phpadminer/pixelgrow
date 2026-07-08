@@ -27,6 +27,11 @@ assert(
 )
 
 assert(
+  /function updateFamilyMember\(memberId, payload, session\)[\s\S]*?request\.put\(`\/family-plan\/families\/current\/members\/\$\{encodeURIComponent\(memberId\)\}`/.test(apiJs),
+  'client api should expose creator-managed member relation updates'
+)
+
+assert(
   /function updateFamilyMemberRole\(memberId, payload, session\)[\s\S]*?request\.put\(`\/family-plan\/families\/current\/members\/\$\{encodeURIComponent\(memberId\)\}\/role`/.test(apiJs),
   'client api should expose creator-managed member role updates'
 )
@@ -39,6 +44,11 @@ assert(
 assert(
   /@Put\('families\/current\/members\/me'\)[\s\S]*?updateCurrentFamilyMember/.test(controllerTs),
   'server should expose current family member relation update endpoint'
+)
+
+assert(
+  /@Put\('families\/current\/members\/:memberId'\)[\s\S]*?updateFamilyMember/.test(controllerTs),
+  'server should expose owner-managed member relation update endpoint'
 )
 
 assert(
@@ -93,6 +103,11 @@ assert(
 )
 
 assert(
+  /async updateFamilyMember\(memberId: string, dto: UpdateFamilyPlanMemberDto,[\s\S]*?operator\.role !== 'owner'[\s\S]*?只有创建者可以管理成员身份[\s\S]*?relation = normalizeFamilyRelation\(dto\.relation\)[\s\S]*?relation,[\s\S]*?\n\s+\}\)[\s\S]*?return this\.getCurrentFamilyMembers\(authorization\)/.test(serviceTs),
+  'server should only allow the creator to change other member family relation labels'
+)
+
+assert(
   /async updateFamilyMemberRole\(memberId: string, dto: UpdateFamilyPlanMemberRoleDto,[\s\S]*?operator\.role !== 'owner'[\s\S]*?只有创建者可以管理成员角色[\s\S]*?target\.role === 'owner'[\s\S]*?normalizeMemberRole\(dto\.role\)/.test(serviceTs),
   'server should only allow the creator to change non-owner member permission roles'
 )
@@ -141,10 +156,13 @@ assert(
   wxml.includes('bindchange="onMyRelationChange"')
     && wxml.includes('bindchange="onInviteRoleChange"')
     && wxml.includes('bindchange="onInviteRelationChange"')
+    && wxml.includes('bindchange="onMemberRelationChange"')
     && wxml.includes('bindchange="onMemberRoleChange"')
     && wxml.includes('data-member-id="{{item.id}}"')
+    && wxml.includes('wx:if="{{item.canManageRelation}}"')
     && wxml.includes('wx:if="{{item.canManageRole}}"')
     && /onMyRelationChange\(event\)[\s\S]*?api\.updateCurrentFamilyMember/.test(pageJs)
+    && /onMemberRelationChange\(event\)[\s\S]*?api\.updateFamilyMember/.test(pageJs)
     && /onMemberRoleChange\(event\)[\s\S]*?api\.updateFamilyMemberRole/.test(pageJs)
     && /async createFamilyInvite\(\)[\s\S]*?role: this\.data\.inviteRole[\s\S]*?relation: this\.data\.inviteRelation/.test(pageJs),
   'family management should let current account choose a relation, creator manage member roles, and invite with role plus relation'
@@ -218,6 +236,8 @@ assert(
     && wxss.includes('.family-row-status')
     && wxss.includes('.family-relation-card')
     && /\.picker-pill \{[\s\S]*?font-weight: 900;\n\s+white-space: nowrap;[\s\S]*?\n\}/.test(wxss)
+    && wxss.includes('.family-member-actions')
+    && wxss.includes('.family-member-relation-picker')
     && wxss.includes('.family-member-role-picker')
     && wxss.includes('.invite-setting-row')
     && wxss.includes('grid-template-columns: 104rpx 62rpx minmax(0, 1fr) auto')
