@@ -26,10 +26,34 @@ assert(
 )
 
 assert(
+  /applySession\(session, extraPatch = \{\}\)[\s\S]*?const account = session && session\.account \? session\.account : null[\s\S]*?accountNickname: account && account\.nickname \? account\.nickname : this\.data\.accountNickname[\s\S]*?accountAvatarUrl: account && account\.avatarUrl \? account\.avatarUrl : this\.data\.accountAvatarUrl/.test(pageJs),
+  'session hydration should reflect the current WeChat nickname and avatar in page state'
+)
+
+assert(
   wxml.includes('点头像选择微信头像，点昵称输入框选择微信昵称')
     && /async confirmAccountProfileBeforeLogin\(\)[\s\S]*?设置头像昵称[\s\S]*?继续登录[\s\S]*?去设置/.test(pageJs)
     && /async loginWithWechat\(\)[\s\S]*?const profileConfirmed = await this\.confirmAccountProfileBeforeLogin\(\)[\s\S]*?if \(!profileConfirmed\) return/.test(pageJs),
   'login should clearly prompt users to choose avatar and nickname before WeChat login'
+)
+
+assert(
+  wxml.includes('class="account-chip"')
+    && wxml.includes("{{account.nickname || accountNickname || name || '微信用户'}}")
+    && wxml.includes('account-chip-avatar'),
+  'logged-in users should see their own WeChat name in the header'
+)
+
+assert(
+  /function needsWechatProfile\(session\)[\s\S]*?nickname === '微信用户'[\s\S]*?!account\.avatarUrl/.test(pageJs)
+    && /restoreWechatSessionOnStart\(\)[\s\S]*?const shouldCompleteProfile = needsWechatProfile\(session\)[\s\S]*?loginFormOpen: shouldCompleteProfile[\s\S]*?familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry\(session\)/.test(pageJs)
+    && /restoreWechatSessionFromAction\(\)[\s\S]*?const shouldCompleteProfile = needsWechatProfile\(session\)[\s\S]*?loginFormOpen: shouldCompleteProfile/.test(pageJs),
+  'restored WeChat accounts without profile details should be prompted to complete avatar and nickname'
+)
+
+assert(
+  wxml.includes('选择头像昵称后登录'),
+  'login action should make avatar and nickname selection explicit'
 )
 
 console.log('familyPlanAccountProfile tests passed')

@@ -19,6 +19,11 @@
         <view>
           <view class="eyebrow">{{roleLabel}}</view>
           <view class="page-title">{{pageTitle}}</view>
+          <view wx:if="{{!isGuest && account}}" class="account-chip">
+            <image wx:if="{{account.avatarUrl || accountAvatarUrl}}" class="account-chip-avatar" src="{{account.avatarUrl || accountAvatarUrl}}" mode="aspectFill" />
+            <view wx:else class="account-chip-avatar placeholder">{{accountAvatarText}}</view>
+            <text>{{account.nickname || accountNickname || name || '微信用户'}}</text>
+          </view>
           <button wx:if="{{isParent && account}}" class="family-status" bindtap="openFamilySwitcher">
             <text>{{familyTitle}}</text>
             <text class="family-status-action">管理</text>
@@ -542,7 +547,7 @@
             </view>
           </view>
         </view>
-        <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="loginWithWechat">微信登录</button>
+        <button class="primary-button login-submit-button" loading="{{loading}}" bindtap="loginWithWechat">选择头像昵称后登录</button>
       </view>
 
       <view class="helper-text">游客模式：关闭弹窗继续体验，数据临时，不保存到家庭。需要长期保存时，再微信登录并创建家庭。</view>

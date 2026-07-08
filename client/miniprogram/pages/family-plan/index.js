@@ -229,6 +229,13 @@ function getAccountInitial(name) {
   return value ? value.slice(0, 1) : '微'
 }
 
+function needsWechatProfile(session) {
+  const account = session && session.account ? session.account : null
+  if (!account) return false
+  const nickname = String(account.nickname || '').trim()
+  return !nickname || nickname === '微信用户' || !account.avatarUrl
+}
+
 function decodeInviteCode(value) {
   if (!value) return ''
   try {
@@ -757,7 +764,9 @@ Page({
     pinCode: '2580',
     accountNickname: '',
     accountAvatarUrl: '',
+    accountAvatarText: '微',
     accountRoleLabel: '家长',
+    name: '',
     session: null,
     account: null,
     families: [],
@@ -1062,12 +1071,17 @@ Page({
 
   applySession(session, extraPatch = {}) {
     const role = session && session.role ? session.role : 'guest'
+    const account = session && session.account ? session.account : null
     const activeFamily = getActiveFamily(session)
     const families = session && Array.isArray(session.families) ? session.families : activeFamily ? [activeFamily] : []
     wx.setStorageSync(SESSION_KEY, session)
     this.setData(Object.assign({
       session,
-      account: session && session.account ? session.account : null,
+      account,
+      accountNickname: account && account.nickname ? account.nickname : this.data.accountNickname,
+      accountAvatarUrl: account && account.avatarUrl ? account.avatarUrl : this.data.accountAvatarUrl,
+      accountAvatarText: getAccountInitial(account && account.nickname ? account.nickname : this.data.accountNickname),
+      name: session && session.name ? session.name : this.data.name,
       families,
       activeFamily,
       familyTitle: getFamilyTitle(session),
@@ -1125,9 +1139,11 @@ Page({
       const session = await api.restoreWechatSession({ code })
       if (!this.isWechatRestoreStillCurrent()) return
       if (session && session.token) {
+        const shouldCompleteProfile = needsWechatProfile(session)
         this.applySession(session, {
           selectedChildId: session.childId || '',
-          familySwitcherOpen: shouldOpenFamilySwitcherOnEntry(session),
+          loginFormOpen: shouldCompleteProfile,
+          familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry(session),
         })
         await this.fetchPlan()
         return
@@ -1153,9 +1169,11 @@ Page({
       const code = await this.getWechatLoginCode()
       const session = await api.restoreWechatSession({ code })
       if (session && session.token) {
+        const shouldCompleteProfile = needsWechatProfile(session)
         this.applySession(session, {
           selectedChildId: session.childId || '',
-          familySwitcherOpen: shouldOpenFamilySwitcherOnEntry(session),
+          loginFormOpen: shouldCompleteProfile,
+          familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry(session),
           pendingGuestSavePlan: hasGuestPlanData(pendingGuestPlan) ? pendingGuestPlan : this.data.pendingGuestSavePlan,
         })
         await this.fetchPlan()

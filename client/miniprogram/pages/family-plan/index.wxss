@@ -216,6 +216,48 @@ picker {
   color: #101820;
 }
 
+.account-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  max-width: 420rpx;
+  min-height: 46rpx;
+  margin-top: 12rpx;
+  padding: 6rpx 14rpx 6rpx 8rpx;
+  border: 2rpx solid rgba(84, 111, 106, 0.12);
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.72);
+  color: #546f6a;
+  font-size: 22rpx;
+  line-height: 1.1;
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+.account-chip text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-chip-avatar {
+  flex: 0 0 auto;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  background: #fff4cf;
+}
+
+.account-chip-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d8870c;
+  font-size: 18rpx;
+}
+
 .role-switch {
   display: flex;
   gap: 8rpx;
