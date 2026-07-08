@@ -2449,7 +2449,7 @@ picker {
 
 .family-row {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
@@ -2458,7 +2458,7 @@ picker {
   padding: 20rpx 22rpx;
   border: 2rpx solid rgba(84, 111, 106, 0.14);
   border-radius: 20rpx;
-  background: rgba(255, 255, 255, 0.86);
+  background: #fffdfa;
   transition: transform 0.18s ease;
 }
 
@@ -2492,7 +2492,7 @@ picker {
 
 .family-row.active {
   border-color: rgba(245, 163, 22, 0.48);
-  background: rgba(255, 244, 207, 0.82);
+  background: #fff4cf;
 }
 
 .family-row-main {

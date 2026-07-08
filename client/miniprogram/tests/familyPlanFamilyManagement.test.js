@@ -79,6 +79,12 @@ assert(
 )
 
 assert(
+  /\.family-row \{[\s\S]*?z-index: 2;[\s\S]*?background: #fffdfa;/.test(wxss)
+    && /\.family-row\.active \{[\s\S]*?background: #fff4cf;/.test(wxss),
+  'family rows should use opaque backgrounds so the swipe delete action does not bleed through'
+)
+
+assert(
   /async loadFamilies\(\)[\s\S]*?const families = result\.families \|\| \[\][\s\S]*?families\.find[\s\S]*?familyKey: activeFamily \? activeFamily\.familyKey : ''/.test(pageJs)
     && /async deleteFamily\(event\)[\s\S]*?const remainingFamilies = \(session\.families \|\| \[\]\)\.filter[\s\S]*?activeFamily = session\.activeFamily && session\.activeFamily\.familyId !== familyId/.test(pageJs),
   'family removal should not keep a removed family through stale activeFamily fallback'
