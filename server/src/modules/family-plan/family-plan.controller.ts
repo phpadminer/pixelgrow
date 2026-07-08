@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Headers, Param, Post, Put, Query, Res } from '@nestjs/common'
 import { FamilyPlanService } from './family-plan.service'
 import {
   ChildLoginDto,
@@ -41,6 +41,14 @@ export class FamilyPlanController {
   @Post('auth/wechat/restore')
   restoreWechatSession(@Body() dto: WechatFamilyPlanLoginDto) {
     return this.familyPlanService.restoreWechatSession(dto)
+  }
+
+  @Get('accounts/:accountId/avatar')
+  async getAccountAvatar(@Param('accountId') accountId: string, @Res() res: any) {
+    const avatar = await this.familyPlanService.getAccountAvatar(accountId)
+    res.setHeader('Content-Type', avatar.contentType)
+    res.setHeader('Cache-Control', 'public, max-age=3600')
+    res.send(avatar.buffer)
   }
 
   @Post('auth/parent')

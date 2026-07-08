@@ -264,7 +264,16 @@ function getAccountInitial(name) {
 function getRenderableAccountAvatarUrl(avatarUrl) {
   const value = String(avatarUrl || '').trim()
   if (!value) return ''
-  return /^data:image\//.test(value) || /^https?:\/\//.test(value) ? value : ''
+  if (/^data:image\//.test(value)) return ''
+  return /^https?:\/\//.test(value) ? value : ''
+}
+
+function sanitizeSessionForRender(session) {
+  if (!session || !session.account) return session
+  const account = Object.assign({}, session.account, {
+    avatarUrl: getRenderableAccountAvatarUrl(session.account.avatarUrl),
+  })
+  return Object.assign({}, session, { account })
 }
 
 function needsWechatProfile(session) {
@@ -955,7 +964,7 @@ Page({
   },
 
   onLoad(options = {}) {
-    const session = wx.getStorageSync(SESSION_KEY) || null
+    const session = sanitizeSessionForRender(wx.getStorageSync(SESSION_KEY) || null)
     const guestSession = wx.getStorageSync(GUEST_SESSION_KEY) || null
     const role = session && session.role ? session.role : 'guest'
     const activeFamily = getActiveFamily(session)
@@ -966,7 +975,7 @@ Page({
       session,
       account: session && session.account ? session.account : null,
       accountNickname: session && session.account && session.account.nickname ? session.account.nickname : '',
-      accountAvatarUrl: session && session.account && session.account.avatarUrl ? session.account.avatarUrl : '',
+      accountAvatarUrl: session && session.account && session.account.avatarUrl ? getRenderableAccountAvatarUrl(session.account.avatarUrl) : '',
       accountAvatarText: getAccountInitial(session && session.account && session.account.nickname ? session.account.nickname : ''),
       families: session && Array.isArray(session.families) ? session.families : activeFamily ? [activeFamily] : [],
       activeFamily,
@@ -1077,9 +1086,9 @@ Page({
     const avatarUrl = event.detail.avatarUrl
     this.setData({ accountAvatarUrl: avatarUrl })
     try {
-      const portableAvatarUrl = await this.prepareAccountAvatarUrl(avatarUrl)
-      this.setData({ accountAvatarUrl: portableAvatarUrl })
+      this.accountAvatarPayload = await this.prepareAccountAvatarUrl(avatarUrl)
     } catch (err) {
+      this.accountAvatarPayload = ''
       wx.showToast({ title: '头像读取失败，请重试', icon: 'none' })
     }
   },
@@ -1165,23 +1174,25 @@ Page({
   },
 
   applySession(session, extraPatch = {}) {
-    const role = session && session.role ? session.role : 'guest'
-    const account = session && session.account ? session.account : null
-    const activeFamily = getActiveFamily(session)
-    const families = session && Array.isArray(session.families) ? session.families : activeFamily ? [activeFamily] : []
-    wx.setStorageSync(SESSION_KEY, session)
+    const renderSession = sanitizeSessionForRender(session)
+    const role = renderSession && renderSession.role ? renderSession.role : 'guest'
+    const account = renderSession && renderSession.account ? renderSession.account : null
+    const activeFamily = getActiveFamily(renderSession)
+    const families = renderSession && Array.isArray(renderSession.families) ? renderSession.families : activeFamily ? [activeFamily] : []
+    this.accountAvatarPayload = ''
+    wx.setStorageSync(SESSION_KEY, renderSession)
     this.setData(Object.assign({
-      session,
+      session: renderSession,
       account,
       accountNickname: account && account.nickname ? account.nickname : this.data.accountNickname,
-      accountAvatarUrl: account && account.avatarUrl ? account.avatarUrl : this.data.accountAvatarUrl,
+      accountAvatarUrl: account && account.avatarUrl ? getRenderableAccountAvatarUrl(account.avatarUrl) : this.data.accountAvatarUrl,
       accountAvatarText: getAccountInitial(account && account.nickname ? account.nickname : this.data.accountNickname),
-      name: session && session.name ? session.name : this.data.name,
+      name: renderSession && renderSession.name ? renderSession.name : this.data.name,
       families,
       activeFamily,
-      familyTitle: getFamilyTitle(session),
+      familyTitle: getFamilyTitle(renderSession),
       isLoggedIn: true,
-      isGuest: !session,
+      isGuest: !renderSession,
       isParent: role === 'parent',
       isChild: role === 'child',
       guestModeStarted: false,
@@ -1196,7 +1207,7 @@ Page({
       tabs: getTabsForRole(role),
       activeTab: 'today',
       pageTitle: getPageTitle(role, 'today'),
-      selectedChildId: session && session.childId ? session.childId : this.data.selectedChildId,
+      selectedChildId: renderSession && renderSession.childId ? renderSession.childId : this.data.selectedChildId,
       loginFormOpen: false,
       familySwitcherOpen: false,
       createFamilyFormOpen: false,
@@ -1303,7 +1314,7 @@ Page({
       const session = await api.loginWechat({
         code,
         nickname: String(this.data.accountNickname || '').trim(),
-        avatarUrl: this.data.accountAvatarUrl || '',
+        avatarUrl: this.accountAvatarPayload || getRenderableAccountAvatarUrl(this.data.accountAvatarUrl),
       })
       this.applySession(session, {
         selectedChildId: session.childId || '',

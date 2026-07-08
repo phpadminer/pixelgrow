@@ -34,6 +34,7 @@ const AUDIT_FAMILY_KEY = 'audit-family'
 const AUDIT_INVITE_CODE = process.env.FAMILY_PLAN_AUDIT_INVITE_CODE || 'AUDIT2026'
 const PARENT_DEMO_CODE = '123456'
 const TOKEN_SECRET = process.env.FAMILY_PLAN_TOKEN_SECRET || 'family-plan-dev-secret'
+const FAMILY_PLAN_PUBLIC_BASE_URL = (process.env.FAMILY_PLAN_PUBLIC_BASE_URL || 'https://wxapi.szsyforging.com').replace(/\/$/, '')
 const APP_TIME_ZONE = process.env.FAMILY_PLAN_TIME_ZONE || 'Asia/Shanghai'
 const SEED_MODES = ['demo', 'starter', 'off'] as const
 const MAX_INLINE_GIFT_IMAGE_LENGTH = 200000
@@ -68,6 +69,31 @@ function assertGiftImageUrl(imageUrl: string) {
   if (isInlineImageUrl(imageUrl) && imageUrl.length > MAX_INLINE_GIFT_IMAGE_LENGTH) {
     throw new BadRequestException('礼品图片太大，请先压缩到 200K 以内')
   }
+}
+
+function normalizeAccountAvatarUrl(avatarUrl?: string | null) {
+  const value = avatarUrl?.trim() || ''
+  if (!value) return null
+  if (/^data:image\//.test(value) || /^https?:\/\//.test(value)) return value
+  return null
+}
+
+function parseAccountAvatarDataUrl(avatarUrl?: string | null) {
+  const value = avatarUrl?.trim() || ''
+  const match = value.match(/^data:(image\/(?:png|jpeg|jpg|webp|gif));base64,([A-Za-z0-9+/=]+)$/)
+  if (!match) return null
+  return {
+    contentType: match[1] === 'image/jpg' ? 'image/jpeg' : match[1],
+    buffer: Buffer.from(match[2], 'base64'),
+  }
+}
+
+function getAccountAvatarPublicUrl(account) {
+  const avatarUrl = account?.avatarUrl || ''
+  if (!avatarUrl) return ''
+  if (/^https?:\/\//.test(avatarUrl)) return avatarUrl
+  if (!/^data:image\//.test(avatarUrl)) return ''
+  return `${FAMILY_PLAN_PUBLIC_BASE_URL}/family-plan/accounts/${encodeURIComponent(account.id)}/avatar`
 }
 
 function normalizeGiftTitle(title: string) {
@@ -478,7 +504,7 @@ function serializeAccount(account) {
   return {
     id: account.id,
     nickname: account.nickname,
-    avatarUrl: account.avatarUrl,
+    avatarUrl: getAccountAvatarPublicUrl(account),
   }
 }
 
@@ -570,21 +596,31 @@ export class FamilyPlanService {
   async loginWechat(dto: WechatFamilyPlanLoginDto) {
     const wechatOpenId = await this.exchangeCodeForOpenId(dto.code)
     const legacyUser = await this.prisma.user.findUnique({ where: { openId: wechatOpenId } })
+    const avatarUrl = normalizeAccountAvatarUrl(dto.avatarUrl)
     const account = await this.prisma.familyPlanAccount.upsert({
       where: { wechatOpenId },
       update: {
         ...(legacyUser?.id && { legacyUserId: legacyUser.id }),
         ...(dto.nickname !== undefined && { nickname: dto.nickname.trim() || null }),
-        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+        ...(dto.avatarUrl !== undefined && { avatarUrl }),
       },
       create: {
         wechatOpenId,
         legacyUserId: legacyUser?.id,
         nickname: dto.nickname?.trim() || legacyUser?.name || '微信用户',
-        avatarUrl: dto.avatarUrl || legacyUser?.avatar,
+        avatarUrl: avatarUrl || legacyUser?.avatar,
       },
     })
     return this.buildWechatParentSession(account)
+  }
+
+  async getAccountAvatar(accountId: string) {
+    const account = await this.prisma.familyPlanAccount.findUnique({ where: { id: accountId } })
+    const avatar = parseAccountAvatarDataUrl(account?.avatarUrl)
+    if (!account || !avatar) {
+      throw new NotFoundException('头像不存在')
+    }
+    return avatar
   }
 
   async loginParent(dto: ParentLoginDto) {
@@ -680,7 +716,7 @@ export class FamilyPlanService {
         relation: member.relation,
         status: member.status,
         nickname: member.account.nickname || '微信用户',
-        avatarUrl: member.account.avatarUrl || '',
+        avatarUrl: getAccountAvatarPublicUrl(member.account),
         isCurrentAccount: member.accountId === session.accountId,
         createdAt: member.createdAt,
       })),
