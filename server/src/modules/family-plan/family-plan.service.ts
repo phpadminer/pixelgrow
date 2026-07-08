@@ -17,6 +17,7 @@ import {
   ParentLoginDto,
   UpdateFamilyPlanChildDto,
   UpdateFamilyPlanFamilyDto,
+  UpdateFamilyPlanMemberDto,
   UpdateFamilyPlanCourseDto,
   UpdateFamilyPlanGiftDto,
   UpdateFamilyPlanHabitDto,
@@ -35,9 +36,11 @@ const TOKEN_SECRET = process.env.FAMILY_PLAN_TOKEN_SECRET || 'family-plan-dev-se
 const SEED_MODES = ['demo', 'starter', 'off'] as const
 const MAX_INLINE_GIFT_IMAGE_LENGTH = 200000
 const FAMILY_MEMBER_ROLES = ['owner', 'admin', 'parent', 'viewer'] as const
+const FAMILY_RELATIONS = ['father', 'mother', 'paternalGrandpa', 'paternalGrandma', 'maternalGrandpa', 'maternalGrandma', 'guardian'] as const
 
 type FamilyPlanSeedMode = typeof SEED_MODES[number]
 type FamilyPlanMemberRole = typeof FAMILY_MEMBER_ROLES[number]
+type FamilyPlanRelation = typeof FAMILY_RELATIONS[number]
 
 function getSeedMode(): FamilyPlanSeedMode {
   const configuredMode = process.env.FAMILY_PLAN_SEED_MODE
@@ -445,6 +448,10 @@ function normalizeMemberRole(role?: string): FamilyPlanMemberRole {
   return FAMILY_MEMBER_ROLES.includes(role as FamilyPlanMemberRole) ? role as FamilyPlanMemberRole : 'parent'
 }
 
+function normalizeFamilyRelation(relation?: string | null): FamilyPlanRelation | null {
+  return FAMILY_RELATIONS.includes(relation as FamilyPlanRelation) ? relation as FamilyPlanRelation : null
+}
+
 function makePublicKey(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -652,6 +659,7 @@ export class FamilyPlanService {
         id: member.id,
         accountId: member.accountId,
         role: member.role,
+        relation: member.relation,
         status: member.status,
         nickname: member.account.nickname || '微信用户',
         avatarUrl: member.account.avatarUrl || '',
@@ -669,6 +677,39 @@ export class FamilyPlanService {
         bindStatus: child.boundAccountId ? 'bound' : 'unbound',
       })),
     }
+  }
+
+  async updateCurrentFamilyMember(dto: UpdateFamilyPlanMemberDto, authorization?: string) {
+    const session = this.requireActiveFamilySession(authorization)
+    const membership = await this.getMembership(session.accountId, session.familyId)
+    const relation = normalizeFamilyRelation(dto.relation)
+    if (relation) {
+      const existing = await this.prisma.familyPlanFamilyMember.findFirst({
+        where: {
+          familyId: session.familyId,
+          relation,
+          status: 'active',
+          NOT: {
+            accountId: session.accountId,
+          },
+        },
+      })
+      if (existing) {
+        throw new BadRequestException('这个家庭身份已经有人使用')
+      }
+    }
+    await this.prisma.familyPlanFamilyMember.update({
+      where: {
+        familyId_accountId: {
+          familyId: membership.familyId,
+          accountId: session.accountId,
+        },
+      },
+      data: {
+        relation,
+      },
+    })
+    return this.getCurrentFamilyMembers(authorization)
   }
 
   async createFamily(dto: CreateFamilyPlanFamilyDto, authorization?: string) {
@@ -776,6 +817,7 @@ export class FamilyPlanService {
         familyId: session.familyId,
         inviteCode: await this.createUniqueInviteCode(),
         role: inviteRole,
+        relation: inviteRole === 'child' ? null : normalizeFamilyRelation(dto.relation),
         childKey: inviteChild?.childKey,
         maxUses: inviteRole === 'child' ? 1 : dto.maxUses,
         createdByAccountId: session.accountId,
@@ -789,6 +831,7 @@ export class FamilyPlanService {
       id: invite.id,
       inviteCode: invite.inviteCode,
       role: invite.role,
+      relation: invite.relation,
       childKey: invite.childKey,
       childName: inviteChild?.name,
       familyId: invite.familyId,
@@ -826,6 +869,22 @@ export class FamilyPlanService {
     }
 
     await this.prisma.$transaction(async (tx) => {
+      const inviteRelation = normalizeFamilyRelation(invite.relation)
+      if (inviteRelation) {
+        const relationHolder = await tx.familyPlanFamilyMember.findFirst({
+          where: {
+            familyId: invite.familyId,
+            relation: inviteRelation,
+            status: 'active',
+            NOT: {
+              accountId: session.accountId,
+            },
+          },
+        })
+        if (relationHolder) {
+          throw new BadRequestException('这个家庭身份已经有人使用')
+        }
+      }
       const existing = await tx.familyPlanFamilyMember.findUnique({
         where: {
           familyId_accountId: {
@@ -842,6 +901,7 @@ export class FamilyPlanService {
           where: { id: existing.id },
           data: {
             role: normalizeMemberRole(invite.role),
+            relation: inviteRelation,
             status: 'active',
           },
         })
@@ -851,6 +911,7 @@ export class FamilyPlanService {
             familyId: invite.familyId,
             accountId: session.accountId,
             role: normalizeMemberRole(invite.role),
+            relation: inviteRelation,
             status: 'active',
           },
         })

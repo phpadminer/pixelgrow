@@ -131,6 +131,23 @@ const CHILD_TABS = [
   { key: 'profile', label: '我的', iconClass: 'profile' },
 ]
 
+const FAMILY_RELATION_OPTIONS = [
+  { label: '暂不设置', value: '' },
+  { label: '爸爸', value: 'father' },
+  { label: '妈妈', value: 'mother' },
+  { label: '爷爷', value: 'paternalGrandpa' },
+  { label: '奶奶', value: 'paternalGrandma' },
+  { label: '外公', value: 'maternalGrandpa' },
+  { label: '外婆', value: 'maternalGrandma' },
+  { label: '其他家人', value: 'guardian' },
+]
+
+const INVITE_ROLE_OPTIONS = [
+  { label: '家长', value: 'parent' },
+  { label: '管理员', value: 'admin' },
+  { label: '只读', value: 'viewer' },
+]
+
 const TAB_TITLES = {
   today: '家庭计划',
   calendar: '日历总览',
@@ -224,6 +241,15 @@ function getFamilyMemberRoleLabel(role) {
   return '家长成员'
 }
 
+function findOptionIndex(options, value) {
+  const index = options.findIndex((item) => item.value === value)
+  return index >= 0 ? index : 0
+}
+
+function getFamilyRelationLabel(relation) {
+  return FAMILY_RELATION_OPTIONS[findOptionIndex(FAMILY_RELATION_OPTIONS, relation)].label
+}
+
 function getAccountInitial(name) {
   const value = String(name || '微').trim()
   return value ? value.slice(0, 1) : '微'
@@ -247,9 +273,12 @@ function decodeInviteCode(value) {
 
 function decorateFamilyMember(member) {
   const nickname = member.nickname || '微信用户'
+  const relationLabel = getFamilyRelationLabel(member.relation)
   return Object.assign({}, member, {
     nickname,
     roleLabel: getFamilyMemberRoleLabel(member.role),
+    relationLabel,
+    relationText: member.relation ? relationLabel : '未设置身份',
     avatarText: getAccountInitial(nickname),
     currentText: member.isCurrentAccount ? '当前账号' : '',
   })
@@ -267,11 +296,12 @@ function decorateFamilyManagedChild(child) {
 function decorateInviteInfo(inviteInfo) {
   if (!inviteInfo) return null
   const isChildInvite = inviteInfo.role === 'child'
+  const relationLabel = getFamilyRelationLabel(inviteInfo.relation)
   return Object.assign({}, inviteInfo, {
-    label: isChildInvite ? '孩子绑定码' : '家长邀请码',
+    label: isChildInvite ? '孩子绑定码' : '家人邀请码',
     hint: isChildInvite
       ? `发给孩子微信，登录后绑定到 ${inviteInfo.childName || '这个孩子'}`
-      : '已复制到剪贴板，也可以直接微信分享给家长。',
+      : `已复制到剪贴板，也可以直接微信分享给${inviteInfo.relation ? relationLabel : '家人'}。`,
   })
 }
 
@@ -797,6 +827,13 @@ Page({
     familyName: '我的家庭',
     inviteCode: '',
     inviteInfo: null,
+    relationOptions: FAMILY_RELATION_OPTIONS,
+    inviteRoleOptions: INVITE_ROLE_OPTIONS,
+    myRelationIndex: 0,
+    inviteRoleIndex: 0,
+    inviteRelationIndex: 0,
+    inviteRole: 'parent',
+    inviteRelation: '',
     familyManageFamily: null,
     familyMembers: [],
     familyManagedChildren: [],
@@ -1683,9 +1720,12 @@ Page({
       return
     }
     const result = await api.getCurrentFamilyMembers(this.data.session)
+    const familyMembers = (result.members || []).map(decorateFamilyMember)
+    const currentMember = familyMembers.find((member) => member.isCurrentAccount) || null
     this.setData({
       familyManageFamily: result.family || this.data.activeFamily,
-      familyMembers: (result.members || []).map(decorateFamilyMember),
+      familyMembers,
+      myRelationIndex: findOptionIndex(FAMILY_RELATION_OPTIONS, currentMember && currentMember.relation),
       familyManagedChildren: (result.children || []).map(decorateFamilyManagedChild),
     })
   },
@@ -1728,6 +1768,43 @@ Page({
     if (wx.setClipboardData) {
       wx.setClipboardData({ data: this.data.inviteInfo.inviteCode })
     }
+  },
+
+  async onMyRelationChange(event) {
+    const index = Number(event.detail.value || 0)
+    const option = FAMILY_RELATION_OPTIONS[index] || FAMILY_RELATION_OPTIONS[0]
+    this.setData({ myRelationIndex: index })
+    this.setData({ loading: true })
+    try {
+      await api.updateCurrentFamilyMember({ relation: option.value }, this.data.session)
+      await this.loadFamilyManagementInfo()
+      wx.showToast({ title: '家庭身份已更新', icon: 'success' })
+    } catch (err) {
+      this.showError(err, '更新家庭身份失败')
+      await this.loadFamilyManagementInfo()
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  onInviteRoleChange(event) {
+    const index = Number(event.detail.value || 0)
+    const option = INVITE_ROLE_OPTIONS[index] || INVITE_ROLE_OPTIONS[0]
+    this.setData({
+      inviteRoleIndex: index,
+      inviteRole: option.value,
+      inviteInfo: null,
+    })
+  },
+
+  onInviteRelationChange(event) {
+    const index = Number(event.detail.value || 0)
+    const option = FAMILY_RELATION_OPTIONS[index] || FAMILY_RELATION_OPTIONS[0]
+    this.setData({
+      inviteRelationIndex: index,
+      inviteRelation: option.value,
+      inviteInfo: null,
+    })
   },
 
   openCreateFamilyForm() {
@@ -1935,7 +2012,10 @@ Page({
     }
     this.setData({ loading: true })
     try {
-      const inviteInfo = decorateInviteInfo(await api.createInvite({ role: 'parent' }, this.data.session))
+      const inviteInfo = decorateInviteInfo(await api.createInvite({
+        role: this.data.inviteRole,
+        relation: this.data.inviteRelation,
+      }, this.data.session))
       this.setData({ inviteInfo })
       if (wx.setClipboardData) {
         wx.setClipboardData({ data: inviteInfo.inviteCode })

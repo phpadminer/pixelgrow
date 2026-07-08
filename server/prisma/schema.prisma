@@ -176,6 +176,7 @@ model FamilyPlanFamilyMember {
   familyId  String
   accountId String
   role      String   @default("parent")
+  relation  String?
   status    String   @default("active")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -193,6 +194,7 @@ model FamilyPlanInvite {
   familyId           String
   inviteCode         String    @unique
   role               String    @default("parent")
+  relation           String?
   childKey           String?
   status             String    @default("active")
   maxUses            Int?

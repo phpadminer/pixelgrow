@@ -44,6 +44,10 @@ function getCurrentFamilyMembers(session) {
   return request.get('/family-plan/families/current/members', {}, getAuthOptions(session))
 }
 
+function updateCurrentFamilyMember(payload, session) {
+  return request.put('/family-plan/families/current/members/me', payload, getAuthOptions(session))
+}
+
 function createFamily(payload, session) {
   return request.post('/family-plan/families', payload, getAuthOptions(session))
 }
@@ -184,6 +188,7 @@ module.exports = {
   restoreWechatSession,
   listFamilies,
   getCurrentFamilyMembers,
+  updateCurrentFamilyMember,
   createFamily,
   createInvite,
   joinFamilyByInvite,

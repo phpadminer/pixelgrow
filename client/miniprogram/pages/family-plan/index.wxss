@@ -2557,6 +2557,34 @@ picker {
   font-weight: 900;
 }
 
+.family-relation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin: 18rpx 0 22rpx;
+  padding: 20rpx 22rpx;
+  border: 2rpx solid rgba(245, 163, 22, 0.22);
+  border-radius: 20rpx;
+  background: #fffaf0;
+}
+
+.picker-pill {
+  min-width: 132rpx;
+  min-height: 56rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 2rpx solid rgba(245, 163, 22, 0.32);
+  background: #fff4cf;
+  color: #c57d00;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
 .family-manage-section {
   margin-top: 22rpx;
 }
@@ -2634,6 +2662,17 @@ picker {
 .family-actions.inline {
   min-width: 0;
   margin-top: 16rpx;
+}
+
+.invite-setting-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.invite-setting-row .picker-pill {
+  width: 100%;
 }
 
 .family-empty-card {

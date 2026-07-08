@@ -250,11 +250,23 @@ export class UpdateFamilyPlanFamilyDto {
   name: string
 }
 
+export class UpdateFamilyPlanMemberDto {
+  @IsString()
+  @IsOptional()
+  @IsIn(['father', 'mother', 'paternalGrandpa', 'paternalGrandma', 'maternalGrandpa', 'maternalGrandma', 'guardian'])
+  relation?: string
+}
+
 export class CreateFamilyPlanInviteDto {
   @IsString()
   @IsOptional()
   @IsIn(['admin', 'parent', 'viewer', 'child'])
   role?: 'admin' | 'parent' | 'viewer' | 'child'
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['father', 'mother', 'paternalGrandpa', 'paternalGrandma', 'maternalGrandpa', 'maternalGrandma', 'guardian'])
+  relation?: string
 
   @IsString()
   @IsOptional()

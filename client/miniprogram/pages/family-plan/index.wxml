@@ -581,6 +581,16 @@
         </view>
       </view>
 
+      <view wx:if="{{activeFamily}}" class="family-relation-card">
+        <view>
+          <view class="field-label">我的家庭身份</view>
+          <view class="helper-text">用于区分爸爸、妈妈、爷爷奶奶等家人身份。</view>
+        </view>
+        <picker mode="selector" range="{{relationOptions}}" range-key="label" value="{{myRelationIndex}}" bindchange="onMyRelationChange">
+          <view class="picker-pill">{{relationOptions[myRelationIndex].label}}</view>
+        </picker>
+      </view>
+
       <view wx:if="{{familyMembers.length > 0}}" class="family-manage-section">
         <view class="field-label">已绑定微信家人</view>
         <view
@@ -592,7 +602,7 @@
           <view wx:else class="family-member-avatar placeholder">{{item.avatarText}}</view>
           <view class="family-member-main">
             <view class="family-member-name">{{item.nickname}}</view>
-            <view class="muted">{{item.roleLabel}} {{item.currentText}}</view>
+            <view class="muted">{{item.relationText}} · {{item.roleLabel}} {{item.currentText}}</view>
           </view>
           <button
             wx:if="{{item.isCurrentAccount}}"
@@ -676,7 +686,21 @@
         <button class="primary-button" bindtap="openCreateFamilyForm">创建家庭</button>
       </view>
 
-      <button wx:if="{{activeFamily}}" class="secondary-button full" loading="{{loading}}" bindtap="createFamilyInvite">邀请家长</button>
+      <view wx:if="{{activeFamily}}" class="invite-setting-row">
+        <view>
+          <view class="field-label">邀请权限</view>
+          <picker mode="selector" range="{{inviteRoleOptions}}" range-key="label" value="{{inviteRoleIndex}}" bindchange="onInviteRoleChange">
+            <view class="picker-pill">{{inviteRoleOptions[inviteRoleIndex].label}}</view>
+          </picker>
+        </view>
+        <view>
+          <view class="field-label">家庭身份</view>
+          <picker mode="selector" range="{{relationOptions}}" range-key="label" value="{{inviteRelationIndex}}" bindchange="onInviteRelationChange">
+            <view class="picker-pill">{{relationOptions[inviteRelationIndex].label}}</view>
+          </picker>
+        </view>
+      </view>
+      <button wx:if="{{activeFamily}}" class="secondary-button full" loading="{{loading}}" bindtap="createFamilyInvite">生成邀请</button>
       <view wx:if="{{inviteInfo}}" class="invite-box">
         <view class="field-label">{{inviteInfo.label}}</view>
         <view class="invite-code">{{inviteInfo.inviteCode}}</view>

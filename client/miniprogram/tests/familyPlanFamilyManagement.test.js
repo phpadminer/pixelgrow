@@ -22,8 +22,18 @@ assert(
 )
 
 assert(
+  /function updateCurrentFamilyMember\(payload, session\)[\s\S]*?request\.put\('\/family-plan\/families\/current\/members\/me'/.test(apiJs),
+  'client api should expose current family member relation updates'
+)
+
+assert(
   /@Get\('families\/current\/members'\)[\s\S]*?getCurrentFamilyMembers/.test(controllerTs),
   'server should expose current family member details endpoint'
+)
+
+assert(
+  /@Put\('families\/current\/members\/me'\)[\s\S]*?updateCurrentFamilyMember/.test(controllerTs),
+  'server should expose current family member relation update endpoint'
 )
 
 assert(
@@ -52,9 +62,23 @@ assert(
 )
 
 assert(
-  /async createInvite\(dto: CreateFamilyPlanInviteDto[\s\S]*?dto\.role === 'child'[\s\S]*?childKey: inviteChild\?\.childKey/.test(serviceTs)
+  /model FamilyPlanFamilyMember[\s\S]*?relation\s+String\?/.test(schema)
+    && /model FamilyPlanInvite[\s\S]*?relation\s+String\?/.test(schema),
+  'schema should persist family relation labels on members and invites'
+)
+
+assert(
+  /export class UpdateFamilyPlanMemberDto[\s\S]*?relation\?: string/.test(fs.readFileSync(path.join(__dirname, '../../../server/src/modules/family-plan/family-plan.dto.ts'), 'utf8'))
+    && /export class CreateFamilyPlanInviteDto[\s\S]*?relation\?: string/.test(fs.readFileSync(path.join(__dirname, '../../../server/src/modules/family-plan/family-plan.dto.ts'), 'utf8')),
+  'DTOs should accept family relation labels'
+)
+
+assert(
+  /async updateCurrentFamilyMember\(dto: UpdateFamilyPlanMemberDto,[\s\S]*?relation = normalizeFamilyRelation\(dto\.relation\)/.test(serviceTs)
+    && serviceTs.includes("relation: inviteRole === 'child' ? null : normalizeFamilyRelation(dto.relation)")
+    && serviceTs.includes('relation: inviteRelation')
     && /private async joinChildInvite\([\s\S]*?boundAccountId: session\.accountId[\s\S]*?toChildAuthResult/.test(serviceTs),
-  'server should create child binding invites and persist the bound WeChat account'
+  'server should update member relation and carry invite relation onto joined members'
 )
 
 assert(
@@ -62,6 +86,7 @@ assert(
     && wxml.includes('家庭 ID')
     && wxml.includes('编辑名称')
     && wxml.includes('已绑定微信家人')
+    && wxml.includes('家庭身份')
     && wxml.includes('孩子账号')
     && wxml.includes('open-type="share"'),
   'family sheet should be upgraded into a family management surface with sharing'
@@ -97,15 +122,25 @@ assert(
 )
 
 assert(
+  wxml.includes('bindchange="onMyRelationChange"')
+    && wxml.includes('bindchange="onInviteRoleChange"')
+    && wxml.includes('bindchange="onInviteRelationChange"')
+    && /onMyRelationChange\(event\)[\s\S]*?api\.updateCurrentFamilyMember/.test(pageJs)
+    && /async createFamilyInvite\(\)[\s\S]*?role: this\.data\.inviteRole[\s\S]*?relation: this\.data\.inviteRelation/.test(pageJs),
+  'family management should let current account choose a relation and invite with role plus relation'
+)
+
+assert(
   wxml.includes('bindtap="createChildBindInvite"')
     && wxml.includes('绑定微信')
     && wxml.includes('bindtap="previewFamilyChild"')
     && wxml.includes('孩子视角')
     && wxml.includes('data-child-id="{{item.childKey}}"')
-    && wxml.includes('邀请家长')
+    && wxml.includes('生成邀请')
     && wxml.includes('wx:if="{{item.canBindWechat}}"')
-    && !wxml.includes('邀请管理员'),
-  'family management should expose parent invite, child preview, and child WeChat binding without admin invite UI'
+    && wxml.includes('管理员')
+    && wxml.includes('只读'),
+  'family management should expose configurable adult invites, child preview, and child WeChat binding'
 )
 
 assert(
@@ -127,7 +162,7 @@ assert(
 
 assert(
   /async createChildBindInvite\(event\)[\s\S]*?api\.createInvite\(\{ role: 'child', childKey, maxUses: 1 \}/.test(pageJs)
-    && /function decorateInviteInfo\(inviteInfo\)[\s\S]*?孩子绑定码[\s\S]*?家长邀请码/.test(pageJs),
+    && /function decorateInviteInfo\(inviteInfo\)[\s\S]*?孩子绑定码[\s\S]*?家人邀请码/.test(pageJs),
   'client should generate child binding invites and decorate invite copy by role'
 )
 
@@ -161,6 +196,8 @@ assert(
     && wxss.includes('.family-row-delete')
     && wxss.includes('.family-form-sheet .login-submit-button')
     && wxss.includes('.family-row-status')
+    && wxss.includes('.family-relation-card')
+    && wxss.includes('.invite-setting-row')
     && wxss.includes('grid-template-columns: 104rpx 62rpx minmax(0, 1fr) auto')
     && wxss.includes('overflow-wrap: anywhere')
     && wxss.includes('.family-child-bind-button'),
