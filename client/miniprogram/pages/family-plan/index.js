@@ -996,8 +996,8 @@ Page({
       itemDraft: defaultItemDraft(today),
       guestNoticeDismissed: Boolean(wx.getStorageSync(GUEST_NOTICE_DISMISSED_KEY)),
       customNavPadding: getCustomNavPadding(),
-      loginFormOpen: shouldCompleteProfile,
-      familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry(session),
+      loginFormOpen: false,
+      familySwitcherOpen: Boolean(session) && !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry(session),
       joinFamilyFormOpen: Boolean(inviteCode && session && session.account),
       inviteCode,
     })
@@ -1248,18 +1248,18 @@ Page({
         const shouldCompleteProfile = needsWechatProfile(session)
         this.applySession(session, {
           selectedChildId: session.childId || '',
-          loginFormOpen: shouldCompleteProfile,
+          loginFormOpen: false,
           familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry(session),
         })
         await this.fetchPlan()
         return
       }
       if (this.isWechatRestoreStillCurrent()) {
-        this.setData({ startChoiceOpen: true })
+        this.chooseGuestMode()
       }
     } catch (err) {
       if (this.isWechatRestoreStillCurrent()) {
-        this.setData({ startChoiceOpen: true })
+        this.chooseGuestMode()
       }
     } finally {
       if (!this.data.session) {
@@ -1278,7 +1278,7 @@ Page({
         const shouldCompleteProfile = needsWechatProfile(session)
         this.applySession(session, {
           selectedChildId: session.childId || '',
-          loginFormOpen: shouldCompleteProfile,
+          loginFormOpen: false,
           familySwitcherOpen: !shouldCompleteProfile && shouldOpenFamilySwitcherOnEntry(session),
           pendingGuestSavePlan: hasGuestPlanData(pendingGuestPlan) ? pendingGuestPlan : this.data.pendingGuestSavePlan,
         })

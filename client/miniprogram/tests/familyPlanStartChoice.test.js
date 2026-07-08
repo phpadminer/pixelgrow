@@ -15,8 +15,10 @@ assert(
 )
 
 assert(
-  /onLoad\(options = \{\}\)[\s\S]*?if \(!session && !guestSession\) \{[\s\S]*?startChoiceOpen: true[\s\S]*?return[\s\S]*?\}[\s\S]*?this\.fetchPlan\(\)/.test(pageJs),
-  'first entry without a session should show the choice screen and avoid creating guest data immediately'
+  /onLoad\(options = \{\}\)[\s\S]*?if \(!session && !guestSession\) \{[\s\S]*?this\.restoreWechatSessionOnStart\(\)[\s\S]*?return[\s\S]*?\}[\s\S]*?this\.fetchPlan\(\)/.test(pageJs)
+    && /async restoreWechatSessionOnStart\(\)[\s\S]*?this\.chooseGuestMode\(\)[\s\S]*?catch \(err\) \{[\s\S]*?this\.chooseGuestMode\(\)/.test(pageJs)
+    && !/restoreWechatSessionOnStart\(\)[\s\S]*?this\.setData\(\{ startChoiceOpen: true \}\)/.test(pageJs),
+  'first entry without a session should directly enter guest experience after restore check instead of showing a blocking choice modal'
 )
 
 assert(
