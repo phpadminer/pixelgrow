@@ -615,7 +615,7 @@
           <view class="helper-text">用于区分爸爸、妈妈、爷爷奶奶等家人身份。</view>
         </view>
         <picker mode="selector" range="{{relationOptions}}" range-key="label" value="{{myRelationIndex}}" bindchange="onMyRelationChange">
-          <view class="picker-pill">{{relationOptions[myRelationIndex].label}}</view>
+          <view class="picker-pill">{{myRelationLabel}}</view>
         </picker>
       </view>
 

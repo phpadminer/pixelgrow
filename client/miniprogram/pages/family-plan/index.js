@@ -858,6 +858,7 @@ Page({
     inviteRoleOptions: INVITE_ROLE_OPTIONS,
     memberRoleOptions: MEMBER_ROLE_OPTIONS,
     myRelationIndex: 0,
+    myRelationLabel: '暂不设置',
     inviteRoleIndex: 0,
     inviteRelationIndex: 0,
     inviteRole: 'parent',
@@ -1783,10 +1784,12 @@ Page({
     const canManageMemberRoles = Boolean(rawCurrentMember && rawCurrentMember.role === 'owner')
     const familyMembers = rawMembers.map((member) => decorateFamilyMember(member, canManageMemberRoles))
     const currentMember = familyMembers.find((member) => member.isCurrentAccount) || null
+    const myRelationIndex = findOptionIndex(FAMILY_RELATION_OPTIONS, currentMember && currentMember.relation)
     this.setData({
       familyManageFamily: result.family || this.data.activeFamily,
       familyMembers,
-      myRelationIndex: findOptionIndex(FAMILY_RELATION_OPTIONS, currentMember && currentMember.relation),
+      myRelationIndex,
+      myRelationLabel: FAMILY_RELATION_OPTIONS[myRelationIndex].label,
       familyManagedChildren: (result.children || []).map(decorateFamilyManagedChild),
     })
   },
@@ -1834,7 +1837,7 @@ Page({
   async onMyRelationChange(event) {
     const index = Number(event.detail.value || 0)
     const option = FAMILY_RELATION_OPTIONS[index] || FAMILY_RELATION_OPTIONS[0]
-    this.setData({ myRelationIndex: index })
+    this.setData({ myRelationIndex: index, myRelationLabel: option.label })
     this.setData({ loading: true })
     try {
       await api.updateCurrentFamilyMember({ relation: option.value }, this.data.session)
