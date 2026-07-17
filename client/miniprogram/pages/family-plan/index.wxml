@@ -1073,6 +1073,17 @@
       </view>
       <view class="helper-text form-note">保存后只影响这一天这一节课；同一天会覆盖规律课默认类型。</view>
       <button class="primary-button course-session-save" bindtap="saveCourseSessionType">保存当日类型</button>
+      <view class="course-postpone-card">
+        <view>
+          <view class="field-label">整体顺延</view>
+          <view class="helper-text">天气等原因停课时，从这一天开始把后续未完成课次整体往后推。</view>
+        </view>
+        <view class="course-postpone-row">
+          <input class="text-input course-postpone-input" type="number" value="{{courseSessionDraft.postponeDays}}" bindinput="onCourseSessionPostponeDaysInput" />
+          <view class="muted">天 · 到 {{courseSessionDraft.postponeTargetText}}</view>
+        </view>
+        <button class="secondary-button course-session-save" bindtap="postponeCourseSessionFromDate">顺延后续课次</button>
+      </view>
     </view>
   </view>
 

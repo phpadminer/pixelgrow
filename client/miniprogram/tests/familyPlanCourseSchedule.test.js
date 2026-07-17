@@ -2,6 +2,7 @@ const assert = require('assert')
 const {
   formatCourseScheduleLabel,
   getCourseSessionForDate,
+  postponeCourseLessonsFromDate,
   summarizeCourseLessons,
   normalizeCourseExtraSessions,
   upsertCourseExtraSession,
@@ -116,5 +117,38 @@ assert.deepStrictEqual(upsertCourseExtraSession(
   { date: '2026-07-06', time: '18:30', lessonType: 'bonus', lessonTypeLabel: '赠送' },
   { date: '2026-07-13', time: '18:30', lessonType: 'formal', lessonTypeLabel: '正式' },
 ])
+
+const weeklyCourse = {
+  id: 'course-weather',
+  weekday: 1,
+  time: '18:30',
+  startDate: '2026-07-01',
+  settlementDate: '2026-07-31',
+  schedules: [
+    { weekday: 1, time: '18:30', lessonType: 'formal' },
+  ],
+  extraSessions: [],
+}
+
+const postponedWeeklyCourse = postponeCourseLessonsFromDate(weeklyCourse, '2026-07-06', 7)
+
+assert.strictEqual(getCourseSessionForDate(postponedWeeklyCourse, '2026-07-06'), null)
+assert.deepStrictEqual(getCourseSessionForDate(postponedWeeklyCourse, '2026-07-13'), {
+  date: '2026-07-13',
+  time: '18:30',
+  lessonType: 'formal',
+  lessonTypeLabel: '正式',
+  source: 'extra',
+  sourceDate: '2026-07-06',
+  status: 'postponed',
+})
+assert.deepStrictEqual(summarizeCourseLessons(postponedWeeklyCourse), {
+  total: 4,
+  trial: 0,
+  formal: 4,
+  bonus: 0,
+  completed: 0,
+  pending: 4,
+})
 
 console.log('familyPlanCourseSchedule tests passed')

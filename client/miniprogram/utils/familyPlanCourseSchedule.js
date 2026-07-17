@@ -6,6 +6,12 @@ function toLocalDate(value) {
   return new Date(`${value}T00:00:00`)
 }
 
+function addDays(dateValue, days) {
+  const date = toLocalDate(dateValue)
+  date.setDate(date.getDate() + Number(days || 0))
+  return makeDateString(date)
+}
+
 function defaultShortDate(dateValue) {
   if (!dateValue || dateValue.length < 10) return dateValue || ''
   return `${Number(dateValue.slice(5, 7))}月${Number(dateValue.slice(8, 10))}日`
@@ -33,12 +39,17 @@ function lessonTypeLabel(value) {
 function normalizeCourseExtraSessions(extraSessions = []) {
   if (!Array.isArray(extraSessions)) return []
   return extraSessions
-    .map((item) => ({
-      date: item.date || item.sessionDate || '',
-      time: item.time || '18:30',
-      lessonType: normalizeLessonType(item.lessonType),
-      lessonTypeLabel: lessonTypeLabel(item.lessonType),
-    }))
+    .map((item) => {
+      const next = {
+        date: item.date || item.sessionDate || '',
+        time: item.time || '18:30',
+        lessonType: normalizeLessonType(item.lessonType),
+        lessonTypeLabel: lessonTypeLabel(item.lessonType),
+      }
+      if (item.status === 'skipped' || item.status === 'postponed') next.status = item.status
+      if (item.sourceDate) next.sourceDate = item.sourceDate
+      return next
+    })
     .filter((item) => item.date)
     .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
 }
@@ -72,7 +83,12 @@ function getCourseSchedules(course = {}) {
 }
 
 function findCourseExtraSession(course, date) {
-  return normalizeCourseExtraSessions(course && course.extraSessions).find((item) => item.date === date) || null
+  const sessions = normalizeCourseExtraSessions(course && course.extraSessions).filter((item) => item.date === date)
+  return sessions.find((item) => item.status !== 'skipped') || sessions[0] || null
+}
+
+function hasSkippedCourseSession(course, date) {
+  return normalizeCourseExtraSessions(course && course.extraSessions).some((item) => item.date === date && item.status === 'skipped')
 }
 
 function isInsideRange(date, startDate, endDate) {
@@ -83,15 +99,20 @@ function isInsideRange(date, startDate, endDate) {
 function getCourseSessionForDate(course = {}, date) {
   const extraSession = findCourseExtraSession(course, date)
   if (extraSession) {
-    return {
+    if (extraSession.status === 'skipped') return null
+    const session = {
       date,
       time: extraSession.time || course.time || '18:30',
       lessonType: extraSession.lessonType,
       lessonTypeLabel: extraSession.lessonTypeLabel,
       source: 'extra',
     }
+    if (extraSession.sourceDate) session.sourceDate = extraSession.sourceDate
+    if (extraSession.status) session.status = extraSession.status
+    return session
   }
 
+  if (hasSkippedCourseSession(course, date)) return null
   if (!isInsideRange(date, course.startDate, course.settlementDate)) return null
   const weekday = toLocalDate(date).getDay()
   const schedule = getCourseSchedules(course).find((item) => Number(item.weekday) === weekday)
@@ -134,7 +155,11 @@ function listCourseLessons(course = {}) {
   const lessons = []
   const extraSessions = normalizeCourseExtraSessions(course.extraSessions)
   const extraSessionDates = extraSessions.reduce((result, item) => {
-    result[item.date] = true
+    if (item.status !== 'skipped') result[item.date] = true
+    return result
+  }, {})
+  const skippedSessionDates = extraSessions.reduce((result, item) => {
+    if (item.status === 'skipped') result[item.date] = true
     return result
   }, {})
   if (course.startDate && course.settlementDate) {
@@ -144,7 +169,7 @@ function listCourseLessons(course = {}) {
     while (cursor <= end) {
       const date = makeDateString(cursor)
       const weekday = cursor.getDay()
-      if (!extraSessionDates[date]) {
+      if (!extraSessionDates[date] && !skippedSessionDates[date]) {
         schedules
           .filter((item) => Number(item.weekday) === weekday)
           .forEach((schedule) => {
@@ -161,15 +186,53 @@ function listCourseLessons(course = {}) {
     }
   }
   extraSessions.forEach((item) => {
-    lessons.push({
+    if (item.status === 'skipped') return
+    const lesson = {
       date: item.date,
       time: item.time || course.time || '18:30',
       lessonType: item.lessonType,
       lessonTypeLabel: item.lessonTypeLabel,
       source: 'extra',
-    })
+    }
+    if (item.sourceDate) lesson.sourceDate = item.sourceDate
+    if (item.status) lesson.status = item.status
+    lessons.push(lesson)
   })
   return lessons.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+}
+
+function postponeCourseLessonsFromDate(course = {}, fromDate, days = 7) {
+  const delayDays = Math.max(1, Number(days || 0))
+  const lessons = listCourseLessons(course)
+    .filter((lesson) => lesson.date >= fromDate && !isCompleted((course.completions || {})[completionKey(course, lesson.date)]))
+  if (lessons.length === 0) return Object.assign({}, course, { extraSessions: normalizeCourseExtraSessions(course.extraSessions) })
+
+  const generated = []
+  lessons.forEach((lesson) => {
+    generated.push({
+      date: lesson.date,
+      time: lesson.time || course.time || '18:30',
+      lessonType: lesson.lessonType,
+      status: 'skipped',
+    })
+    generated.push({
+      date: addDays(lesson.date, delayDays),
+      time: lesson.time || course.time || '18:30',
+      lessonType: lesson.lessonType,
+      sourceDate: lesson.date,
+      status: 'postponed',
+    })
+  })
+  const affectedDates = generated.reduce((result, item) => {
+    result[item.date] = true
+    return result
+  }, {})
+  const existing = Array.isArray(course.extraSessions)
+    ? course.extraSessions.filter((item) => !affectedDates[item.date || item.sessionDate || ''])
+    : []
+  return Object.assign({}, course, {
+    extraSessions: normalizeCourseExtraSessions(existing.concat(generated)),
+  })
 }
 
 function summarizeCourseLessons(course = {}, completions = {}) {
@@ -204,6 +267,7 @@ module.exports = {
   makeDateString,
   normalizeLessonType,
   normalizeCourseExtraSessions,
+  postponeCourseLessonsFromDate,
   summarizeCourseLessons,
   upsertCourseExtraSession,
 }

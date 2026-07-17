@@ -111,7 +111,7 @@ export class CreateFamilyPlanCourseDto extends FamilyPlanFocusDto {
 
   @IsArray()
   @IsOptional()
-  extraSessions?: Array<{ date: string; time: string; lessonType?: 'trial' | 'formal' | 'bonus' }>
+  extraSessions?: Array<{ date: string; time: string; lessonType?: 'trial' | 'formal' | 'bonus'; status?: 'skipped' | 'postponed'; sourceDate?: string }>
 
   @IsString()
   @IsNotEmpty()

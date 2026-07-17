@@ -450,21 +450,30 @@ function normalizeCourseExtraSessions(value: unknown) {
   return value
     .map((item) => {
       if (!item || typeof item !== 'object') return null
-      const session = item as { date?: unknown; sessionDate?: unknown; time?: unknown; lessonType?: unknown }
+      const session = item as { date?: unknown; sessionDate?: unknown; time?: unknown; lessonType?: unknown; status?: unknown; sourceDate?: unknown }
       const date = isDateString(session.date) ? session.date : isDateString(session.sessionDate) ? session.sessionDate : ''
       if (!date) return null
       const time = isTimeString(session.time) ? String(session.time) : ''
       const lessonType = normalizeCourseLessonType(session.lessonType)
-      const key = `${date}-${time}-${lessonType}`
+      const status = session.status === 'skipped' || session.status === 'postponed' ? String(session.status) : ''
+      const sourceDate = isDateString(session.sourceDate) ? String(session.sourceDate) : ''
+      const key = `${date}-${time}-${lessonType}-${status}-${sourceDate}`
       if (seen.has(key)) return null
       seen.add(key)
-      return { date, time, lessonType }
+      return {
+        date,
+        time,
+        lessonType,
+        ...(status && { status }),
+        ...(sourceDate && { sourceDate }),
+      }
     })
-    .filter((item): item is { date: string; time: string; lessonType: 'trial' | 'formal' | 'bonus' } => Boolean(item))
+    .filter((item): item is { date: string; time: string; lessonType: 'trial' | 'formal' | 'bonus'; status?: string; sourceDate?: string } => Boolean(item))
 }
 
 function getExtraSessionForDate(extraSessions: unknown, date: string) {
-  return normalizeCourseExtraSessions(extraSessions).find((item) => item.date === date)
+  const sessions = normalizeCourseExtraSessions(extraSessions).filter((item) => item.date === date)
+  return sessions.find((item) => item.status !== 'skipped') || sessions[0]
 }
 
 function getCourseTimeForDate(course: { schedules?: unknown; extraSessions?: unknown; time?: string | null }, date: string) {

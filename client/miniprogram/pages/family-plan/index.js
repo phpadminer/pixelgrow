@@ -40,6 +40,7 @@ const {
   lessonTypeLabel,
   normalizeLessonType,
   normalizeCourseExtraSessions,
+  postponeCourseLessonsFromDate,
   summarizeCourseLessons,
   upsertCourseExtraSession,
 } = require('../../utils/familyPlanCourseSchedule')
@@ -2562,6 +2563,8 @@ Page({
         lessonTypeLabel: lessonTypeLabel(lessonType),
         durationText: `${course.durationMinutes || 0} 分钟`,
         sourceText: agendaItem.sessionSource === 'extra' ? '单次调整' : '规律课',
+        postponeDays: '7',
+        postponeTargetText: shortDate(addDays(agendaItem.date || this.data.selectedDate, 7)),
       },
     })
   },
@@ -2575,6 +2578,16 @@ Page({
     this.setData({
       'courseSessionDraft.lessonType': lessonType,
       'courseSessionDraft.lessonTypeLabel': lessonTypeLabel(lessonType),
+    })
+  },
+
+  onCourseSessionPostponeDaysInput(event) {
+    const value = event.detail.value
+    const days = Math.max(1, Math.min(60, Number(value || 0) || 7))
+    const date = this.data.courseSessionDraft && this.data.courseSessionDraft.date ? this.data.courseSessionDraft.date : this.data.selectedDate
+    this.setData({
+      'courseSessionDraft.postponeDays': value,
+      'courseSessionDraft.postponeTargetText': shortDate(addDays(date, days)),
     })
   },
 
@@ -2612,6 +2625,50 @@ Page({
       await this.fetchPlan()
     } catch (err) {
       this.showError(err, '保存失败')
+    }
+  },
+
+  async postponeCourseSessionFromDate() {
+    const draft = this.data.courseSessionDraft
+    if (!draft || !draft.courseId) return
+    const course = this.data.courses.find((item) => item.id === draft.courseId)
+    if (!course) return
+    const days = Math.max(1, Math.min(60, Number(draft.postponeDays || 0) || 7))
+    const confirmed = await new Promise((resolve) => {
+      wx.showModal({
+        title: '整体顺延课程',
+        content: `从 ${shortDate(draft.date)} 开始，未完成课次整体顺延 ${days} 天，已完成课次不变。`,
+        confirmText: '顺延',
+        success: (res) => resolve(Boolean(res.confirm)),
+        fail: () => resolve(false),
+      })
+    })
+    if (!confirmed) return
+    const postponedCourse = postponeCourseLessonsFromDate(course, draft.date, days)
+    const payload = Object.assign({}, postponedCourse, {
+      childId: course.childId,
+      weekdays: course.weekdays,
+      schedules: getCourseSchedules(course).map((item) => ({
+        weekday: item.weekday,
+        time: item.time,
+        lessonType: item.lessonType,
+      })),
+      extraSessions: postponedCourse.extraSessions,
+    })
+    try {
+      if (this.data.isGuest) {
+        const courses = upsertGuestPlanItem(this.data.courses, payload)
+        wx.showToast({ title: '已临时顺延课程', icon: 'none' })
+        this.setData({ courseSessionFormOpen: false, courseSessionDraft: null })
+        this.refreshGuestPlan({ courses })
+        return
+      }
+      await api.updatePlanItem('courses', course.id, payload, this.data.session)
+      wx.showToast({ title: '已整体顺延', icon: 'success' })
+      this.setData({ courseSessionFormOpen: false, courseSessionDraft: null })
+      await this.fetchPlan()
+    } catch (err) {
+      this.showError(err, '顺延失败')
     }
   },
 

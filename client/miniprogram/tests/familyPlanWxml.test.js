@@ -37,6 +37,13 @@ assert(
 )
 
 assert(
+  wxml.includes('整体顺延')
+    && wxml.includes('bindtap="postponeCourseSessionFromDate"')
+    && /postponeCourseSessionFromDate\(\)[\s\S]*?postponeCourseLessonsFromDate\(course, draft\.date, days\)/.test(pageJs),
+  'daily course-session detail should support postponing all remaining course lessons'
+)
+
+assert(
   wxml.includes('wx:for="{{selectedAgenda}}" wx:key="id" class="list-row" data-id="{{item.id}}" bindtap="openCalendarAgendaDetail"'),
   'calendar agenda rows should open daily agenda detail, not full course editor'
 )
