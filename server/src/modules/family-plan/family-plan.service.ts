@@ -548,9 +548,10 @@ function getReminderTemplateData(reminderType: FamilyPlanReminderType, values: R
     }
   }
   return {
-    thing1: { value: values.title },
-    thing2: { value: values.summary },
-    time3: { value: values.time },
+    thing12: { value: values.title },
+    time11: { value: values.time },
+    thing3: { value: values.summary },
+    thing9: { value: values.note || values.familyName || '' },
   }
 }
 
@@ -1223,6 +1224,7 @@ export class FamilyPlanService {
       familyName: session.familyName || '我的家庭',
       date: now.toISOString().slice(0, 10),
       time: now.toISOString().replace('T', ' ').slice(0, 16),
+      note: reminderType === 'deadline' ? `${session.familyName || '我的家庭'} · 到期提醒` : `${session.familyName || '我的家庭'} · 每日安排`,
     }
     await this.sendWechatSubscribeMessage({
       openId: account.wechatOpenId,
@@ -1310,6 +1312,7 @@ export class FamilyPlanService {
         familyName: family.name,
         date: today,
         time: `${today} 08:00`,
+        note: reminderType === 'deadline' ? `${family.name} · 今日/明日到期` : `${family.name} · 每日安排`,
       }
       try {
         await this.sendWechatSubscribeMessage({

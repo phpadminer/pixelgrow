@@ -43,6 +43,7 @@ function testServerReminderContract() {
   assert.ok(controller.includes("@Post('reminders/send-due')"), 'Controller 应暴露定时任务触发接口')
   assert.ok(service.includes('sendWechatSubscribeMessage'), 'Service 应封装微信订阅消息发送')
   assert.ok(service.includes('sendDueReminders'), 'Service 应支持外部 cron 触发提醒')
+  assert.ok(service.includes('thing12') && service.includes('time11') && service.includes('thing3') && service.includes('thing9'), 'Service 默认字段应匹配日程提醒模板')
 }
 
 testMiniProgramReminderEntry()
