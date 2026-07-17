@@ -15,6 +15,8 @@ import {
   CreateFamilyPlanTaskDto,
   JoinFamilyPlanInviteDto,
   ParentLoginDto,
+  SaveFamilyPlanReminderSubscriptionDto,
+  SendFamilyPlanReminderTestDto,
   UpdateFamilyPlanChildDto,
   UpdateFamilyPlanFamilyDto,
   UpdateFamilyPlanMemberDto,
@@ -40,10 +42,15 @@ const SEED_MODES = ['demo', 'starter', 'off'] as const
 const MAX_INLINE_GIFT_IMAGE_LENGTH = 200000
 const FAMILY_MEMBER_ROLES = ['owner', 'admin', 'parent', 'viewer'] as const
 const FAMILY_RELATIONS = ['father', 'mother', 'paternalGrandpa', 'paternalGrandma', 'maternalGrandpa', 'maternalGrandma', 'guardian'] as const
+const REMINDER_TYPES = ['daily', 'deadline'] as const
+const WX_MINIPROGRAM_STATE = process.env.WX_MINIPROGRAM_STATE || 'trial'
 
 type FamilyPlanSeedMode = typeof SEED_MODES[number]
 type FamilyPlanMemberRole = typeof FAMILY_MEMBER_ROLES[number]
 type FamilyPlanRelation = typeof FAMILY_RELATIONS[number]
+type FamilyPlanReminderType = typeof REMINDER_TYPES[number]
+
+let wechatAccessTokenCache: { token: string; expiresAt: number } | null = null
 
 function getSeedMode(): FamilyPlanSeedMode {
   const configuredMode = process.env.FAMILY_PLAN_SEED_MODE
@@ -384,6 +391,12 @@ function localDateString(value = new Date()) {
   return getZonedDateParts(value).date
 }
 
+function addLocalDateDays(date: string, days: number) {
+  const value = new Date(`${date}T00:00:00Z`)
+  value.setUTCDate(value.getUTCDate() + days)
+  return value.toISOString().slice(0, 10)
+}
+
 function timeToMinutes(time?: string | null) {
   const match = String(time || '').match(/^(\d{1,2}):(\d{2})$/)
   if (!match) return null
@@ -503,6 +516,42 @@ function normalizeMemberRole(role?: string): FamilyPlanMemberRole {
 
 function normalizeFamilyRelation(relation?: string | null): FamilyPlanRelation | null {
   return FAMILY_RELATIONS.includes(relation as FamilyPlanRelation) ? relation as FamilyPlanRelation : null
+}
+
+function normalizeReminderType(reminderType?: string): FamilyPlanReminderType {
+  return REMINDER_TYPES.includes(reminderType as FamilyPlanReminderType) ? reminderType as FamilyPlanReminderType : 'daily'
+}
+
+function getReminderTemplateId(reminderType: FamilyPlanReminderType) {
+  return reminderType === 'deadline'
+    ? process.env.FAMILY_PLAN_DEADLINE_REMINDER_TEMPLATE_ID || ''
+    : process.env.FAMILY_PLAN_DAILY_REMINDER_TEMPLATE_ID || ''
+}
+
+function getReminderTemplateData(reminderType: FamilyPlanReminderType, values: Record<string, string>) {
+  const envKey = reminderType === 'deadline'
+    ? 'FAMILY_PLAN_DEADLINE_REMINDER_DATA_JSON'
+    : 'FAMILY_PLAN_DAILY_REMINDER_DATA_JSON'
+  const configured = process.env[envKey]
+  if (configured) {
+    try {
+      const parsed = JSON.parse(configured)
+      return Object.keys(parsed).reduce((data, key) => {
+        const rawValue = String(parsed[key]?.value || parsed[key] || '')
+        data[key] = {
+          value: rawValue.replace(/\{(\w+)\}/g, (_match, token) => values[token] || ''),
+        }
+        return data
+      }, {} as Record<string, { value: string }>)
+    } catch (_err) {
+      // Ignore invalid env JSON and fall back to the default test payload.
+    }
+  }
+  return {
+    thing1: { value: values.title },
+    thing2: { value: values.summary },
+    time3: { value: values.time },
+  }
 }
 
 function makePublicKey(prefix: string) {
@@ -1077,6 +1126,216 @@ export class FamilyPlanService {
     }
     const membership = await this.getMembership(session.accountId, invite.familyId)
     return this.toParentAuthResult(session.accountId, membership)
+  }
+
+  async getReminderConfig(authorization?: string) {
+    const session = this.requireActiveFamilySession(authorization)
+    const subscriptions = await this.prisma.familyPlanReminderSubscription.findMany({
+      where: {
+        familyId: session.familyId,
+        accountId: session.accountId,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+    const templateIds = {
+      daily: getReminderTemplateId('daily'),
+      deadline: getReminderTemplateId('deadline'),
+    }
+    return {
+      templateIds,
+      configured: Boolean(templateIds.daily || templateIds.deadline),
+      subscriptions: subscriptions.map((item) => ({
+        reminderType: item.reminderType,
+        templateId: item.templateId,
+        status: item.status,
+        dailyTime: item.dailyTime,
+        updatedAt: item.updatedAt,
+      })),
+    }
+  }
+
+  async saveReminderSubscription(dto: SaveFamilyPlanReminderSubscriptionDto, authorization?: string) {
+    const session = this.requireActiveFamilySession(authorization)
+    const reminderType = normalizeReminderType(dto.reminderType)
+    const configuredTemplateId = getReminderTemplateId(reminderType)
+    const templateId = dto.templateId || configuredTemplateId
+    if (!templateId) {
+      throw new BadRequestException('微信提醒模板未配置')
+    }
+    const subscription = await this.prisma.familyPlanReminderSubscription.upsert({
+      where: {
+        familyId_accountId_reminderType: {
+          familyId: session.familyId,
+          accountId: session.accountId,
+          reminderType,
+        },
+      },
+      create: {
+        familyId: session.familyId,
+        accountId: session.accountId,
+        reminderType,
+        templateId,
+        status: dto.status,
+        dailyTime: dto.dailyTime,
+      },
+      update: {
+        templateId,
+        status: dto.status,
+        dailyTime: dto.dailyTime,
+      },
+    })
+    return {
+      reminderType: subscription.reminderType,
+      status: subscription.status,
+      updatedAt: subscription.updatedAt,
+    }
+  }
+
+  async sendReminderTest(dto: SendFamilyPlanReminderTestDto, authorization?: string) {
+    const session = this.requireActiveFamilySession(authorization)
+    const reminderType = normalizeReminderType(dto.reminderType)
+    const subscription = await this.prisma.familyPlanReminderSubscription.findUnique({
+      where: {
+        familyId_accountId_reminderType: {
+          familyId: session.familyId,
+          accountId: session.accountId,
+          reminderType,
+        },
+      },
+    })
+    const templateId = subscription?.templateId || getReminderTemplateId(reminderType)
+    if (!templateId) {
+      throw new BadRequestException('微信提醒模板未配置')
+    }
+    if (subscription?.status !== 'accept') {
+      throw new BadRequestException('这个提醒还没有获得微信授权')
+    }
+    const account = await this.prisma.familyPlanAccount.findUnique({ where: { id: session.accountId } })
+    if (!account?.wechatOpenId) {
+      throw new UnauthorizedException('微信账号不存在')
+    }
+    const now = new Date()
+    const values = {
+      title: reminderType === 'deadline' ? '伴学点滴到期提醒' : '伴学点滴每日提醒',
+      summary: reminderType === 'deadline' ? '有任务或节点临近到期，请及时查看。' : '今天的课程、习惯和任务请按顺序完成。',
+      familyName: session.familyName || '我的家庭',
+      date: now.toISOString().slice(0, 10),
+      time: now.toISOString().replace('T', ' ').slice(0, 16),
+    }
+    await this.sendWechatSubscribeMessage({
+      openId: account.wechatOpenId,
+      templateId,
+      reminderType,
+      data: getReminderTemplateData(reminderType, values),
+    })
+    await this.prisma.familyPlanReminderSubscription.update({
+      where: {
+        familyId_accountId_reminderType: {
+          familyId: session.familyId,
+          accountId: session.accountId,
+          reminderType,
+        },
+      },
+      data: {
+        lastSentAt: now,
+      },
+    })
+    return { sent: true }
+  }
+
+  async sendDueReminders(cronToken?: string) {
+    const expectedToken = process.env.FAMILY_PLAN_REMINDER_CRON_TOKEN
+    if (!expectedToken || cronToken !== expectedToken) {
+      throw new UnauthorizedException('提醒任务口令不正确')
+    }
+    const now = new Date()
+    const today = localDateString(now)
+    const tomorrow = addLocalDateDays(today, 1)
+    const subscriptions = await this.prisma.familyPlanReminderSubscription.findMany({
+      where: {
+        status: 'accept',
+      },
+      orderBy: {
+        updatedAt: 'asc',
+      },
+    })
+    let sent = 0
+    let skipped = 0
+    const failed: Array<{ subscriptionId: string; message: string }> = []
+    for (const subscription of subscriptions) {
+      const reminderType = normalizeReminderType(subscription.reminderType)
+      if (subscription.lastSentAt && localDateString(subscription.lastSentAt) === today) {
+        skipped += 1
+        continue
+      }
+      const [family, account] = await Promise.all([
+        this.prisma.familyPlanFamily.findUnique({ where: { id: subscription.familyId } }),
+        this.prisma.familyPlanAccount.findUnique({ where: { id: subscription.accountId } }),
+      ])
+      if (!family || !account?.wechatOpenId) {
+        skipped += 1
+        continue
+      }
+      if (reminderType === 'deadline') {
+        const [taskCount, milestoneCount] = await Promise.all([
+          this.prisma.familyPlanTask.count({
+            where: {
+              familyKey: family.familyKey,
+              dueDate: {
+                gte: today,
+                lte: tomorrow,
+              },
+            },
+          }),
+          this.prisma.familyPlanMilestone.count({
+            where: {
+              familyKey: family.familyKey,
+              date: {
+                gte: today,
+                lte: tomorrow,
+              },
+            },
+          }),
+        ])
+        if (taskCount + milestoneCount === 0) {
+          skipped += 1
+          continue
+        }
+      }
+      const values = {
+        title: reminderType === 'deadline' ? '伴学点滴到期提醒' : '伴学点滴每日提醒',
+        summary: reminderType === 'deadline' ? '有任务或节点临近到期，请及时查看。' : '今天的课程、习惯和任务请按顺序完成。',
+        familyName: family.name,
+        date: today,
+        time: `${today} 08:00`,
+      }
+      try {
+        await this.sendWechatSubscribeMessage({
+          openId: account.wechatOpenId,
+          templateId: subscription.templateId,
+          reminderType,
+          data: getReminderTemplateData(reminderType, values),
+        })
+        await this.prisma.familyPlanReminderSubscription.update({
+          where: { id: subscription.id },
+          data: { lastSentAt: now },
+        })
+        sent += 1
+      } catch (err) {
+        failed.push({
+          subscriptionId: subscription.id,
+          message: err instanceof Error ? err.message : 'unknown error',
+        })
+      }
+    }
+    return {
+      checked: subscriptions.length,
+      sent,
+      skipped,
+      failed,
+    }
   }
 
   private async joinChildInvite(invite, session: FamilyPlanSession & { accountId: string }) {
@@ -1914,6 +2173,57 @@ export class FamilyPlanService {
     if (result.count === 0) {
       throw new NotFoundException(message)
     }
+  }
+
+  private async getWechatAccessToken() {
+    const appId = process.env.WX_APP_ID
+    const appSecret = process.env.WX_APP_SECRET
+    if (!appId || !appSecret) {
+      throw new BadRequestException('微信 AppID/AppSecret 未配置')
+    }
+    const now = Date.now()
+    if (wechatAccessTokenCache && wechatAccessTokenCache.expiresAt > now + 60_000) {
+      return wechatAccessTokenCache.token
+    }
+    const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appId}&secret=${appSecret}`
+    const response = await fetch(url)
+    const data = (await response.json()) as { access_token?: string; expires_in?: number; errcode?: number; errmsg?: string }
+    if (!data.access_token) {
+      throw new BadRequestException(`微信 access_token 获取失败：${data.errmsg || data.errcode || 'unknown'}`)
+    }
+    wechatAccessTokenCache = {
+      token: data.access_token,
+      expiresAt: now + Math.max(60, Number(data.expires_in || 7200) - 300) * 1000,
+    }
+    return data.access_token
+  }
+
+  private async sendWechatSubscribeMessage(params: {
+    openId: string
+    templateId: string
+    reminderType: FamilyPlanReminderType
+    data: Record<string, { value: string }>
+  }) {
+    const accessToken = await this.getWechatAccessToken()
+    const response = await fetch(`https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=${accessToken}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        touser: params.openId,
+        template_id: params.templateId,
+        page: 'pages/family-plan/index',
+        miniprogram_state: WX_MINIPROGRAM_STATE,
+        lang: 'zh_CN',
+        data: params.data,
+      }),
+    })
+    const result = (await response.json()) as { errcode?: number; errmsg?: string }
+    if (result.errcode) {
+      throw new BadRequestException(`微信提醒发送失败：${result.errmsg || result.errcode}`)
+    }
+    return result
   }
 
   private async exchangeCodeForOpenId(code: string): Promise<string> {

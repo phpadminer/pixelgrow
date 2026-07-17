@@ -14,6 +14,8 @@ import {
   CreateFamilyPlanTaskDto,
   JoinFamilyPlanInviteDto,
   ParentLoginDto,
+  SaveFamilyPlanReminderSubscriptionDto,
+  SendFamilyPlanReminderTestDto,
   UpdateFamilyPlanChildDto,
   UpdateFamilyPlanFamilyDto,
   UpdateFamilyPlanMemberDto,
@@ -122,6 +124,29 @@ export class FamilyPlanController {
   @Post('invites/join')
   joinInvite(@Body() dto: JoinFamilyPlanInviteDto, @Headers('authorization') authorization?: string) {
     return this.familyPlanService.joinInvite(dto, authorization)
+  }
+
+  @Get('reminders/config')
+  getReminderConfig(@Headers('authorization') authorization?: string) {
+    return this.familyPlanService.getReminderConfig(authorization)
+  }
+
+  @Post('reminders/subscriptions')
+  saveReminderSubscription(
+    @Body() dto: SaveFamilyPlanReminderSubscriptionDto,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return this.familyPlanService.saveReminderSubscription(dto, authorization)
+  }
+
+  @Post('reminders/send-test')
+  sendReminderTest(@Body() dto: SendFamilyPlanReminderTestDto, @Headers('authorization') authorization?: string) {
+    return this.familyPlanService.sendReminderTest(dto, authorization)
+  }
+
+  @Post('reminders/send-due')
+  sendDueReminders(@Headers('x-family-plan-cron-token') cronToken?: string) {
+    return this.familyPlanService.sendDueReminders(cronToken)
   }
 
   @Get()

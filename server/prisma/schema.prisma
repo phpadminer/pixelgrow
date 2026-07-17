@@ -211,6 +211,23 @@ model FamilyPlanInvite {
   @@index([createdByAccountId])
 }
 
+model FamilyPlanReminderSubscription {
+  id           String    @id @default(cuid())
+  familyId     String
+  accountId    String
+  reminderType String
+  templateId   String
+  status       String
+  dailyTime    String?
+  lastSentAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([familyId, accountId, reminderType])
+  @@index([accountId, status])
+  @@index([familyId, reminderType])
+}
+
 model FamilyPlanChild {
   id        String   @id @default(cuid())
   familyKey String

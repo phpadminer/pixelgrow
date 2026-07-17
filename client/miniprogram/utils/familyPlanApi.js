@@ -56,6 +56,18 @@ function updateFamilyMemberRole(memberId, payload, session) {
   return request.put(`/family-plan/families/current/members/${encodeURIComponent(memberId)}/role`, payload, getAuthOptions(session))
 }
 
+function getReminderConfig(session) {
+  return request.get('/family-plan/reminders/config', {}, getAuthOptions(session))
+}
+
+function saveReminderSubscription(payload, session) {
+  return request.post('/family-plan/reminders/subscriptions', payload, getAuthOptions(session))
+}
+
+function sendReminderTest(payload, session) {
+  return request.post('/family-plan/reminders/send-test', payload, getAuthOptions(session))
+}
+
 function createFamily(payload, session) {
   return request.post('/family-plan/families', payload, getAuthOptions(session))
 }
@@ -199,6 +211,9 @@ module.exports = {
   updateCurrentFamilyMember,
   updateFamilyMember,
   updateFamilyMemberRole,
+  getReminderConfig,
+  saveReminderSubscription,
+  sendReminderTest,
   createFamily,
   createInvite,
   joinFamilyByInvite,

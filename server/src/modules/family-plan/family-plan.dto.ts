@@ -201,6 +201,34 @@ export class UpdateFamilyPlanCompletionDto extends FamilyKeyDto {
   isMakeup?: boolean
 }
 
+export class SaveFamilyPlanReminderSubscriptionDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['daily', 'deadline'])
+  reminderType: 'daily' | 'deadline'
+
+  @IsString()
+  @IsNotEmpty()
+  templateId: string
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['accept', 'reject', 'ban', 'filter'])
+  status: 'accept' | 'reject' | 'ban' | 'filter'
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(8)
+  dailyTime?: string
+}
+
+export class SendFamilyPlanReminderTestDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['daily', 'deadline'])
+  reminderType: 'daily' | 'deadline'
+}
+
 export class WechatFamilyPlanLoginDto {
   @IsString()
   @IsNotEmpty()

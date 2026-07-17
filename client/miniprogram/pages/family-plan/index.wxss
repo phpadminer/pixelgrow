@@ -2003,6 +2003,40 @@ picker {
   box-shadow: 0 18rpx 42rpx rgba(166, 123, 43, 0.08);
 }
 
+.wechat-reminder-card {
+  margin-bottom: 22rpx;
+  background: rgba(255, 250, 239, 0.92);
+  border-color: rgba(245, 163, 22, 0.28);
+}
+
+.reminder-grid {
+  display: grid;
+  gap: 18rpx;
+  margin-top: 18rpx;
+}
+
+.reminder-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150rpx;
+  gap: 18rpx;
+  align-items: center;
+  padding: 22rpx;
+  border: 2rpx solid rgba(245, 163, 22, 0.22);
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.reminder-status {
+  margin-top: 8rpx;
+  color: #d8870c;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.reminder-test-button {
+  width: 100%;
+}
+
 .compact-head {
   margin-top: 0;
 }

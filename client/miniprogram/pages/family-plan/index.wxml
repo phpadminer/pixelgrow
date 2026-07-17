@@ -459,6 +459,34 @@
 
       <view class="tab-content" wx:elif="{{activeTab === 'notifications'}}">
         <button class="ghost-button back-button" bindtap="closeNotifications">返回</button>
+        <view class="notification-card wechat-reminder-card">
+          <view class="section-head compact-head">
+            <view>
+              <view class="section-title">微信提醒</view>
+              <view class="muted">每日提示、到期提醒需要你主动授权后才能发送。</view>
+            </view>
+          </view>
+          <view wx:if="{{isGuest}}" class="empty-card inner-empty">游客模式不发送微信提醒。登录并创建家庭后可开启。</view>
+          <view wx:else class="reminder-grid">
+            <view class="reminder-option">
+              <view>
+                <view class="agenda-title">每日提示</view>
+                <view class="muted">每天提醒当天课程、习惯和任务。</view>
+                <view class="reminder-status">状态：{{wechatReminderStatus.daily}}</view>
+              </view>
+              <button class="primary-button compact" bindtap="subscribeDailyReminder">开启</button>
+            </view>
+            <view class="reminder-option">
+              <view>
+                <view class="agenda-title">到期提醒</view>
+                <view class="muted">任务、节点或兑换临近到期时提醒。</view>
+                <view class="reminder-status">状态：{{wechatReminderStatus.deadline}}</view>
+              </view>
+              <button class="primary-button compact" bindtap="subscribeDeadlineReminder">开启</button>
+            </view>
+            <button class="ghost-button reminder-test-button" data-type="daily" bindtap="sendReminderTest">测试发送</button>
+          </view>
+        </view>
         <view class="notification-card">
           <view class="section-head compact-head">
             <view>

@@ -917,6 +917,9 @@ Page({
     notifications: [],
     notificationCount: 0,
     readNotificationIds: {},
+    wechatReminderLoading: false,
+    wechatReminderTemplates: { daily: '', deadline: '' },
+    wechatReminderStatus: { daily: '未开启', deadline: '未开启' },
     grades: GRADES,
     profileEditing: false,
     profileDraft: { name: '', grade: '' },
@@ -2351,6 +2354,7 @@ Page({
       notificationReturnTab: this.data.activeTab === 'notifications' ? this.data.notificationReturnTab : this.data.activeTab,
       activeTab: 'notifications',
     })
+    this.loadWechatReminderConfig()
   },
 
   closeNotifications() {
@@ -2370,6 +2374,88 @@ Page({
       readNotificationIds,
       activeTab,
     })
+  },
+
+  async loadWechatReminderConfig() {
+    if (this.data.isGuest || !this.data.session) return
+    this.setData({ wechatReminderLoading: true })
+    try {
+      const result = await api.getReminderConfig(this.data.session)
+      const templateIds = result.templateIds || {}
+      const status = { daily: '未开启', deadline: '未开启' }
+      ;(result.subscriptions || []).forEach((item) => {
+        if (!item || !item.reminderType) return
+        if (item.status === 'accept') status[item.reminderType] = '已开启'
+        else if (item.status === 'reject') status[item.reminderType] = '已拒绝'
+        else if (item.status === 'ban') status[item.reminderType] = '已关闭'
+        else status[item.reminderType] = '未开启'
+      })
+      this.setData({
+        wechatReminderTemplates: {
+          daily: templateIds.daily || '',
+          deadline: templateIds.deadline || '',
+        },
+        wechatReminderStatus: status,
+      })
+    } catch (err) {
+      this.showError(err, '提醒配置加载失败')
+    } finally {
+      this.setData({ wechatReminderLoading: false })
+    }
+  },
+
+  subscribeDailyReminder() {
+    this.requestWechatReminder('daily')
+  },
+
+  subscribeDeadlineReminder() {
+    this.requestWechatReminder('deadline')
+  },
+
+  requestWechatReminder(reminderType) {
+    if (this.data.isGuest || !this.data.session) {
+      wx.showToast({ title: '请先微信登录', icon: 'none' })
+      return
+    }
+    const templateId = this.data.wechatReminderTemplates[reminderType]
+    if (!templateId) {
+      wx.showToast({ title: '先配置微信提醒模板', icon: 'none' })
+      return
+    }
+    wx.requestSubscribeMessage({
+      tmplIds: [templateId],
+      success: async (res) => {
+        const status = res[templateId] || 'reject'
+        try {
+          await api.saveReminderSubscription({
+            reminderType,
+            templateId,
+            status,
+          }, this.data.session)
+          wx.showToast({ title: status === 'accept' ? '提醒已开启' : '未授权提醒', icon: 'none' })
+          this.loadWechatReminderConfig()
+        } catch (err) {
+          this.showError(err, '保存提醒授权失败')
+        }
+      },
+      fail: (err) => {
+        this.showError(err, '微信提醒授权失败')
+      },
+    })
+  },
+
+  async sendReminderTest(event) {
+    if (this.data.isGuest || !this.data.session) {
+      wx.showToast({ title: '请先微信登录', icon: 'none' })
+      return
+    }
+    const reminderType = event.currentTarget.dataset.type || 'daily'
+    try {
+      await api.sendReminderTest({ reminderType }, this.data.session)
+      wx.showToast({ title: '测试提醒已发送', icon: 'none' })
+    } catch (err) {
+      this.showError(err, '测试提醒发送失败')
+    }
   },
 
   changeSelectedDate(event) {
