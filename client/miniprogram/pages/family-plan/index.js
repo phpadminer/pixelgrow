@@ -337,8 +337,7 @@ function shouldOpenFamilySwitcherOnEntry(session) {
     session
       && session.role === 'parent'
       && session.account
-      && Array.isArray(session.families)
-      && session.families.length > 0
+      && !getActiveFamily(session)
   )
 }
 
