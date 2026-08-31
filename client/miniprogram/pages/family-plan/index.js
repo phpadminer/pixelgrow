@@ -44,6 +44,10 @@ const {
   summarizeCourseLessons,
   upsertCourseExtraSession,
 } = require('../../utils/familyPlanCourseSchedule')
+const {
+  getMonthGrid,
+  stepSelectedDate,
+} = require('../../utils/familyPlanCalendar')
 
 const SESSION_KEY = 'familyPlanSession'
 const GUEST_SESSION_KEY = 'familyPlanGuestSession'
@@ -641,13 +645,10 @@ function buildHistoryAgenda(today, source, childId) {
 
 function makeCalendarDays(selectedDate, source, childId) {
   const date = toDate(selectedDate)
-  const first = new Date(date.getFullYear(), date.getMonth(), 1)
-  const firstDay = first.getDay()
-  const startOffset = -firstDay
-  const start = new Date(first)
-  start.setDate(first.getDate() + startOffset)
+  const grid = getMonthGrid(selectedDate)
+  const start = toDate(grid.startDate)
 
-  return Array.from({ length: 35 }, (_, index) => {
+  return Array.from({ length: grid.cellCount }, (_, index) => {
     const current = new Date(start)
     current.setDate(start.getDate() + index)
     const value = formatDate(current)
@@ -2466,7 +2467,9 @@ Page({
 
   moveSelectedDate(event) {
     const amount = Number(event.currentTarget.dataset.amount)
-    this.refreshView({ selectedDate: addDays(this.data.selectedDate, amount) })
+    this.refreshView({
+      selectedDate: stepSelectedDate(this.data.selectedDate, amount, this.data.calendarViewMode),
+    })
   },
 
   chooseCalendarDay(event) {
